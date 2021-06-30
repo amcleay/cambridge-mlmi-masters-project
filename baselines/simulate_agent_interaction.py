@@ -3,6 +3,7 @@ import logging
 import os.path
 import sys
 from copy import deepcopy
+from inspect import signature
 from pathlib import Path
 from pprint import pprint
 
@@ -26,26 +27,29 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def instantiate_agent(agent: Literal["user", "system"], fcn_name: str):
-    """Returns an instance of an user or system model returned by `model_fcn_name`.
+def instantiate_agent(agent: Literal["user", "system"], fcn_spec: OmegaConf):
+    """Returns an instance of an user or system model returned by calling the function
+    specified in `fcn_spec`.
 
     Parameters
     ----------
     agent
         Name of agent to instantiate.
-    fcn_name
-        This should be a string containing the function name that will return an object
-        when called without parameters.
+    fcn_spec
+        A configuration object with the structure::
 
-    Examples
-    --------
-    To instantiate the baseline system model, `agent` should be "system" and `fcn_name`
-    should be "baseline_system_module".
+            {
+                'name': str, name of the function to be called imported from {`agent`}_models.py
+                'args': list, of positional arguments,
+                'kwargs': dict, of keyword arguments
+            }
     """
 
     module = f"{agent}_models"
     models = importlib.import_module(module)
-    return getattr(models, fcn_name)()
+    agent_gen_fcn = getattr(models, fcn_spec.name)
+    bound_arguments = signature(agent_gen_fcn).bind(*fcn_spec.args, **fcn_spec.kwargs)
+    return agent_gen_fcn(*bound_arguments.args, **bound_arguments.kwargs)
 
 
 def generate_dialogues(config: OmegaConf):

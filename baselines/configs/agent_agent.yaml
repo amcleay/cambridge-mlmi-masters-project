@@ -1,10 +1,20 @@
 agents:
   # function called to generate the user agent. Must be implemented
   # in user_models.py
-  user: baseline_usr_model
+  user:
+    name: baseline_usr_model
+    # specify here the arguments to your function, if any
+    args: []
+    # specify here the kwargs to your function, if any
+    kwargs: {}
   # function called to generate the system agent. Must be implemented
   # in system_models.py
-  system: baseline_sys_model
+  system:
+    name: baseline_sys_model
+    # specify here the arguments to your function, if any
+    args: []
+    # specify here the kwargs to your function, if any
+    kwargs: {}
 
 generation:
   # maximum number of turns for each dialogue
