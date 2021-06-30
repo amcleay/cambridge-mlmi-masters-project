@@ -251,6 +251,17 @@ REF_SYS_DA_GOALS["Taxi"]["Phone"] = "phone"
 REF_SYS_DA_GOALS["Police"]["Name"] = "name"
 
 
+ERRONEOUS_SLOTS_FOR_DOMAIN = {}
+"""This mapping is used to convert wrong domain slots to different slot conventions. For example, during generation,
+the system might issue the act {'act': 'Attraction-Recommend', 'slot': 'Ref', 'values': ['00000076']} but the 'Ref'
+slot is not defined for the 'Attraction' domain. This will cause a lookup error in the main code, unless a secondary
+lookup table with these conversions is defined.
+"""
+ERRONEOUS_SLOTS_FOR_DOMAIN["Attraction"] = {
+    "Ref": "ref",
+}
+
+
 class ServiceSchema(object):
     """A wrapper for schema for a service."""
 
@@ -552,6 +563,7 @@ class Processor(object):
             self.new_slot_names_mapping = REF_SYS_DA_GOALS
         else:
             self.new_slot_names_mapping = {}
+        self.erroneous_slot_names_mapping = ERRONEOUS_SLOTS_FOR_DOMAIN
 
     @property
     def unfound_slot_span_ratio(self):
@@ -728,11 +740,15 @@ class Processor(object):
                     )
                 else:
                     to_convert = action["slot"]
-                    try:
+                    if to_convert in slot_conversion_mapping:
                         action["slot"] = slot_conversion_mapping[to_convert]
-                    except KeyError:
-                        print()
-                        raise
+                    else:
+                        logging.warning(
+                            f"During conversion encountered slot {to_convert} for {domain} domain ..."
+                        )
+                        action["slot"] = self.erroneous_slot_names_mapping[domain][
+                            to_convert
+                        ]
 
     def _generate_dialog_states(self, frame_dict, overwrite_slot_values):
         """Get the dialog states and overwrite some of the slot values."""
@@ -1255,7 +1271,7 @@ class Processor(object):
         """Generate a list of dialogues in the dstc8 data format."""
         converted_dialogs = []
         for dial_id in id_list:
-            print("dial_id", dial_id)
+            logging.info(f"Converting dialogue {dial_id}")
             converted_turns, covered_services = self._generate_dial_turns(
                 dialogs[dial_id]["log"], dial_id
             )
