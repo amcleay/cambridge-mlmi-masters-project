@@ -19,8 +19,24 @@ In order to set up the necessary environment:
    ```
 
 > **_NOTE:_**  The conda environment will have `convlab-2` installed in editable mode - it will appear under `src/convlab-2`.
+
 > **_NOTE:_**  For reproducibility, it is essential to use `baselines_environment.lock.yml` as opposed to `baselines_environment.yml` when creating the environment.
 
+> **_NOTE:_** Due to available hardware, we could not run `convlab2` with the `pytorch` version that comes with their installation. We used version `1.7.1` instead. For our hardware we followed the steps:
+
+1. Uninstall `pytorch`
+   ```
+   pip uninstall pytorch
+   ```
+2. Install hardware compatible version of `pytorch`
+   ```
+   pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/tor
+   ```
+
+If your device is not compatible with the `cuda 11.0` toolkit, then head over to the [pytorch website](https://pytorch.org/get-started/previous-versions/) and find an appropriate command for installing the version of `pytorch` indicated in `baselines_environment.lock.yml` with a cuda version that runs for your hardware. For example for `cuda 10.2` use:
+   ```
+   pip install torch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2
+   ```
 
 ## Installation
 
