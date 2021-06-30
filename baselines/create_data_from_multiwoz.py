@@ -260,6 +260,18 @@ lookup table with these conversions is defined.
 ERRONEOUS_SLOTS_FOR_DOMAIN["Attraction"] = {
     "Ref": "ref",
 }
+ERRONEOUS_SLOTS_FOR_DOMAIN["Hospital"] = {
+    "Choice": "choice",
+}
+ERRONEOUS_SLOTS_FOR_DOMAIN["Restaurant"] = {
+    "NotBook": "notbook",
+}
+ERRONEOUS_SLOTS_FOR_DOMAIN["Hotel"] = {
+    "NotBook": "notbook",
+}
+ERRONEOUS_SLOTS_FOR_DOMAIN["Train"] = {
+    "NotBook": "notbook",
+}
 
 
 class ServiceSchema(object):
@@ -744,9 +756,15 @@ class Processor(object):
                         logging.warning(
                             f"During conversion encountered slot {to_convert} for {domain} domain ..."
                         )
-                        action["slot"] = self.erroneous_slot_names_mapping[domain][
-                            to_convert
-                        ]
+                        if domain in self.erroneous_slot_names_mapping:
+                            action["slot"] = self.erroneous_slot_names_mapping[domain][
+                                to_convert
+                            ]
+                        else:
+                            logging.error(
+                                f"Could not remap slots for action: {action} ..."
+                            )
+                            raise KeyError
 
     def _generate_dialog_states(self, frame_dict, overwrite_slot_values):
         """Get the dialog states and overwrite some of the slot values."""
