@@ -32,3 +32,6 @@ rng_settings:
     enabled: false
     deterministic: true
     benchmark: false
+
+# for development purposes, modifies output folder name
+testmode: false

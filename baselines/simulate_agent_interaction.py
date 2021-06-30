@@ -148,10 +148,11 @@ def generate_dialogues(config: OmegaConf):
         simulated_dialogues[dial_id] = dialogue.dialogue
 
     # save dialogues and generation metadata in a single file
+    prefix = "testmode_" if config.testmode else ""
     out_dir = os.path.join(
         os.pardir,
         "models",
-        f"testmode_{usr_metadata['model_code']}_{sys_metadata['model_code']}",
+        f"{prefix}{usr_metadata['model_code']}_{sys_metadata['model_code']}",
     )
     save_dialogues(simulated_dialogues, out_dir, chunksize=0)
     save_metadata(model_metadata, out_dir)
