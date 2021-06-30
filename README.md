@@ -1,34 +1,49 @@
 # crazyneuraluser
 
-Add a short description here!
+A powerful, the best, domain independent, smart and awesome user model for your system development and evaluation.
 
-## Description
 
-A longer description of your project goes here...
+## Running baselines
 
-## Installation
+### Environment setup 
 
 In order to set up the necessary environment:
 
-1. review and uncomment what you need in `environment.yml` and create an environment `crazyneuraluser` with the help of [conda]:
+1. Create an environment `neuraluserbaselines` with the help of [conda]:
    ```
-   conda env create -f environment.yml
+   conda env create -f baselines_environment.lock.yml
    ```
 2. activate the new environment with:
    ```
-   conda activate crazyneuraluser
+   conda activate neuraluserbaselines
    ```
 
-> **_NOTE:_**  The conda environment will have crazyneuraluser installed in editable mode.
-> Some changes, e.g. in `setup.cfg`, might require you to run `pip install -e .` again.
+> **_NOTE:_**  The conda environment will have `convlab-2` installed in editable mode - it will appear under `src/convlab-2`.
+> **_NOTE:_**  For reproducibility, it is essential to use `baselines_environment.lock.yml` as opposed to `baselines_environment.yml` when creating the environment.
 
 
+## Installation
+
+The recommended way to use this repository is to develop the core code under `src/crazyneuraluser`. The experiments/exporatory analysis making use of the core 
+package code should be placed outside the library and import it. See more guidance under the [Project Organisation](#project-organization) section below.
+
+To create an environment for the package, make sure you have deactivated all `conda` environments. Then:
+
+1. Create an environment `crazyneuraluser` with the help of [conda]:
+   ```
+   conda env create -f environment.yml
+   ```
+2. Add the developer dependencies to this environment with the help of [conda]:
+   ```
+   conda env update -f dev_environment.yml
+   ```
+   
 Optional and needed only once after `git clone`:
 
 3. install several [pre-commit] git hooks with:
    ```bash
    pre-commit install
-   # You might also want to run `pre-commit autoupdate`
+   # You _are encouraged_ to run `pre-commit autoupdate`
    ```
    and checkout the configuration under `.pre-commit-config.yaml`.
    The `-n, --no-verify` flag of `git commit` can be used to deactivate pre-commit hooks temporarily.
@@ -39,7 +54,6 @@ Optional and needed only once after `git clone`:
    ```
    This is useful to avoid large diffs due to plots in your notebooks.
    A simple `nbstripout --uninstall` will revert these changes.
-
 
 Then take a look into the `scripts` and `notebooks` folders.
 
