@@ -1,0 +1,34 @@
+agents:
+  # function called to generate the user agent. Must be implemented
+  # in user_models.py
+  user: baseline_usr_model
+  # function called to generate the system agent. Must be implemented
+  # in system_models.py
+  system: baseline_sys_model
+
+generation:
+  # maximum number of turns for each dialogue
+  max_turns: 30
+  # number of dialogues to generate
+  n_dialogues: 10
+  # How many dialogues per file
+  num_dials_per_file: 32
+  # Use to save the content of the state property of the user/system agent DST at every turn
+  save_dst_state: true
+  # true: apply the cleaning operations implemented in utils.CorpusGoalGenerator._clean_goal
+  #  to the original goal
+  clean_goals: true
+
+logging:
+  # true: prints the dialogues as they are generated
+  verbose: false
+  # print message after this number of dialogues have been simulated
+  generation_progress_print_freq: 100
+
+# set random number seeds to ensure deterministic behaviour across runs (see utils.ensure_determinism)
+rng_settings:
+  seed: 112
+  cudnn:
+    enabled: false
+    deterministic: true
+    benchmark: false
