@@ -1,5 +1,6 @@
 import importlib
 import logging
+import os.path
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -9,10 +10,12 @@ import click
 from convlab2 import BiSession
 from convlab2.evaluator.multiwoz_eval import MultiWozEvaluator
 from omegaconf import OmegaConf
+from typing_extensions import Literal
 from utils import (
     CorpusGoalGenerator,
     MultiWOZ21Dialogue,
     ensure_determinism,
+    get_commit_hash,
     print_turn,
     save_dialogues,
     save_metadata,
@@ -23,11 +26,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def instantiate_agent(agent, fcn_name: str):
+def instantiate_agent(agent: Literal["user", "system"], fcn_name: str):
     """Returns an instance of an user or system model returned by `model_fcn_name`.
 
     Parameters
     ----------
+    agent
+        Name of agent to instantiate.
     fcn_name
         This should be a string containing the function name that will return an object
         when called without parameters.
@@ -35,7 +40,7 @@ def instantiate_agent(agent, fcn_name: str):
     Examples
     --------
     To instantiate the baseline system model, `agent` should be "system" and `fcn_name`
-    should be "baseline_system_module"
+    should be "baseline_system_module".
     """
 
     module = f"{agent}_models"
@@ -67,7 +72,8 @@ def generate_dialogues(config: OmegaConf):
     model_metadata = {
         "USER": usr_metadata,
         "SYSTEM": sys_metadata,
-        "RNG": OmegaConf.to_container(config.rng_settings),
+        "generating_config": OmegaConf.to_container(config),
+        "commit_hash": get_commit_hash(),
     }
 
     n_dials = config.generation.n_dialogues
@@ -141,8 +147,12 @@ def generate_dialogues(config: OmegaConf):
         dial_id = f"{_}.json"
         simulated_dialogues[dial_id] = dialogue.dialogue
 
-    # save dialogues in a single file
-    out_dir = f"testmode_{usr_metadata['model_code']}_{sys_metadata['model_code']}"
+    # save dialogues and generation metadata in a single file
+    out_dir = os.path.join(
+        os.pardir,
+        "models",
+        f"testmode_{usr_metadata['model_code']}_{sys_metadata['model_code']}",
+    )
     save_dialogues(simulated_dialogues, out_dir, chunksize=0)
     save_metadata(model_metadata, out_dir)
 

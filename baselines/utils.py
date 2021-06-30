@@ -4,6 +4,7 @@ import logging
 import os.path
 import random
 import shutil
+import subprocess
 from collections import defaultdict
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
@@ -506,3 +507,8 @@ def save_metadata(model_metadata: dict, dirname: str):
     path = os.path.join(dirname, "metadata.json")
     with open(path, "w") as f:
         json.dump(model_metadata, f)
+
+
+def get_commit_hash():
+    """Returns the commit hash for the current HEAD."""
+    return subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode()

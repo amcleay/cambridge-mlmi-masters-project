@@ -47,7 +47,7 @@ flags.DEFINE_string(
     "schema_file_name", "schema.json", "Name of the schema file to use."
 )
 flags.DEFINE_enum(
-    "requested_slots_convention",
+    "slots_convention",
     "original",
     ["original", "multiwoz22", "multiwoz_goals"],
     "Controls which slot names are used for requestable slot annotations and as action parameters.",
@@ -63,7 +63,7 @@ flags.DEFINE_list(
 )
 flags.DEFINE_boolean(
     "clean_goals",
-    False,
+    True,
     "Whether the goal undergoes the cleaning operations implemented in utils.CorpusGoalGenerator._clean_goal before \
     being included in the converted dialogue",
 )
@@ -552,14 +552,12 @@ class Processor(object):
 
         # whether the slot names for requested slots and actions are the same as in
         # DSTC8 or converted to MultiWOZ 2.2 format
-        self.requested_slots_convention = kwargs.get(
-            "requested_slots_convention", "original"
-        )
-        if self.requested_slots_convention == "multiwoz22":
+        self.slots_convention = kwargs.get("slots_convention", "original")
+        if self.slots_convention == "multiwoz22":
             self.new_slot_names_mapping = REF_SYS_DA_MWOZ22
-        elif self.requested_slots_convention == "convlab2":
+        elif self.slots_convention == "convlab2":
             self.new_slot_names_mapping = REF_SYS_DA
-        elif self.requested_slots_convention == "multiwoz_goals":
+        elif self.slots_convention == "multiwoz_goals":
             self.new_slot_names_mapping = REF_SYS_DA_GOALS
         else:
             self.new_slot_names_mapping = {}
@@ -1313,7 +1311,8 @@ def main(_):
     schema_path = os.path.join(_DIR_PATH, FLAGS.schema_file_name)
     schemas = Schema(schema_path)
     processor = Processor(
-        schemas, requested_slots_convention=FLAGS.requested_slots_convention
+        schemas,
+        slots_convention=FLAGS.slots_convention,
     )
     data_path = os.path.join(FLAGS.input_data_dir, "data.json")
     with open(data_path, "r") as f:

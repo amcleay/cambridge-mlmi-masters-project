@@ -30,13 +30,37 @@ In order to set up the necessary environment:
    ```
 2. Install hardware compatible version of `pytorch`
    ```
-   pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/tor
+   pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
    ```
 
 If your device is not compatible with the `cuda 11.0` toolkit, then head over to the [pytorch website](https://pytorch.org/get-started/previous-versions/) and find an appropriate command for installing the version of `pytorch` indicated in `baselines_environment.lock.yml` with a cuda version that runs for your hardware. For example for `cuda 10.2` use:
    ```
    pip install torch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2
    ```
+   
+### Generating dialogues through agent-agent interaction
+
+To generate dialogues, first change working directory to the `baselines` directory. Run the command
+   ```
+   python baselines_setup.py
+   ```
+to prepare `convlab-2` for running the baselines. Then, select one of the available configurations in the `configs` directory and run the command
+   ```
+   python simulate_agent_interaction.py --config /rel/path/to/chosen/config
+   ```
+The dialogues will be be saved automatically in the `models` directory, under a directory whose name depends on the configuration run. The `models` directory is located in the parent directory of the `baselines` directory. The `metadata.json` file saved with the dialogues contains information about the data generation process.
+
+### Converting the generated dialogues to SGD-like format
+
+The `create_data_from_multiwoz.py` script can be used to convert the generated dialogues to SGD format, necessary for evaluation. It is based on the script provided by Google for DSTC8, but with additional functionality such as:
+
+   - conversion of slot names as annotated in the MultiWOZ 2.1 dialogue acts to different slot names, specified through the `--slots_convention` argument. Options are `multiwoz22` to convert the slots to the same slots as defined in the MultiWOZ 2.2 dataset whreas the `multiwoz_goals` converts the slot names to the names used in the dialogue goal and state tracking annotations.
+
+  - addition of system and user `nlu` fields for every turn
+
+  - option to perform cleaning operations on the goals to ensure a standard format is received by the evaluator. 
+
+The conversion is done according to the `schema.json` file in the `baselines` directory, which is the same as used by `DSTC8` conversion except for the addition of the `police` domain. Type ``python create_data_from_multiwoz.py --helpfull`` to see a full list of flags and usage. 
 
 ## Installation
 
