@@ -44,11 +44,19 @@ To generate dialogues, first change working directory to the `baselines` directo
    ```
    python baselines_setup.py
    ```
-to prepare `convlab-2` for running the baselines. Then, select one of the available configurations in the `configs` directory and run the command
+to prepare `convlab2` for running the baselines. 
+
+#### Generating dialogues conditioned on randomly sampled goals
+
+Select one of the available configurations in the `configs` directory and run the command
    ```
    python simulate_agent_interaction.py --config /rel/path/to/chosen/config
    ```
-The dialogues will be be saved automatically in the `models` directory, under a directory whose name depends on the configuration run. The `models` directory is located in the parent directory of the `baselines` directory. The `metadata.json` file saved with the dialogues contains information about the data generation process.
+to generate dialogues conditioned on randomly sampled goals according to the `convlab2` goal model. The dialogues will be be saved automatically in the `models` directory, under a directory whose name depends on the configuration run. The `models` directory is located in the parent directory of the `baselines` directory. The `metadata.json` file saved with the dialogues contains information about the data generation process.
+
+#### Generating dialogues conditioned on `MultiWOZ2.1` goals
+
+To generate the entire corpus, simply pass the `--goals-path /path/to/multiwoz2.1/data.json/file` flag to `simulate_agent_interaction.py`. To generate the `test/val` split additionally pass the `--filter-path /path/to/multiwoz2.1/test-or-valListFile` argument to `simulate_agent_interaction.py`. You can use the  `generate_multiwoz21_train_id_file` function in `baselines/utils.py` to generate `trainListFile` which can then be passed via the `--filter-path` argument to the dialogue generation script in order to generate dialogues conditioned on the `MultiWOZ2.1` training goals.
 
 ### Converting the generated dialogues to SGD-like format
 

@@ -62,10 +62,10 @@ flags.DEFINE_list(
     "should be located in the directory specified by ``input_data_dir`` argument.",
 )
 flags.DEFINE_boolean(
-    "clean_goals",
+    "standardise_goal",
     True,
-    "Whether the goal undergoes the cleaning operations implemented in utils.CorpusGoalGenerator._clean_goal before \
-    being included in the converted dialogue",
+    "Whether the goal undergoes the cleaning operations implemented in utils.CorpusGoalGenerator.standardise_goal \
+     before being included in the converted dialogue",
 )
 flags.DEFINE_boolean(
     "add_user_general_domain_actions",
@@ -1294,13 +1294,13 @@ class Processor(object):
             if "goal" in dialogs[dial_id]:
                 goal = dialogs[dial_id]["goal"]
                 if FLAGS.clean_goals:
-                    goal = CorpusGoalGenerator._clean_goal(goal)
+                    goal = CorpusGoalGenerator.standardise_goal(goal)
             else:
                 goal = {}
             if "final_goal" in dialogs[dial_id]:
                 final_goal = dialogs[dial_id]["final_goal"]
                 if FLAGS.clean_goals:
-                    final_goal = CorpusGoalGenerator._clean_goal(goal)
+                    final_goal = CorpusGoalGenerator.standardise_goal(goal)
             else:
                 final_goal = {}
             if "metrics" in dialogs[dial_id]:
@@ -1395,6 +1395,4 @@ if __name__ == "__main__":
 
 
 # TODO: Write sanity checks to ensure everything is correct
-
-
 # TODO: IF POST APPEAERS MULTIPLE TIMES IN THE SAME TURN ANNOTATION = RAISE VALUE ERROR!

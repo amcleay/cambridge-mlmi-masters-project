@@ -9,6 +9,8 @@ import os.path
 from absl import app, flags, logging
 from utils import CorpusGoalGenerator, load_multiwoz
 
+from baselines.utils import load_json
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_boolean(
@@ -29,7 +31,7 @@ SLOT_VALUE_PAIR_KEYS = ["info", "fail_info", "book", "fail_book"]
 
 
 def preprocess_goal(goal: dict):
-    return CorpusGoalGenerator._clean_goal(goal)  # noqa
+    return CorpusGoalGenerator.standardise_goal(goal)  # noqa
 
 
 def remove_values(goal: dict) -> dict:
@@ -52,21 +54,14 @@ def extract_goals(data: dict, output_fname: str, keep_values: bool = True):
 
     goals = collections.defaultdict(dict)
     for dial_id, dial in data.items():
-        goal = preprocess_goal(dial["goal"]) if FLAGS.clean_goal else dial["goal"]
+        goal = dial["goal"]
+        preprocess_goal(goal) if FLAGS.clean_goal else goal
         if not keep_values:
             goal = remove_values(goal)
         goals[dial_id] = goal
 
     with open(f"{output_fname}", "w") as f:
         json.dump(goals, f, sort_keys=True, indent=4)
-
-
-def load_goals(path: str) -> dict:
-
-    with open(path, "r") as f:
-        goals = json.load(f)
-
-    return goals
 
 
 def hash_goals(goals: dict, output_goals_hash_file: str):
@@ -108,10 +103,10 @@ def main(_):
     value_flag = "with_vals" if FLAGS.include_values else "no_vals"
     output_goals_file = f"{value_flag}_{clean_flag}_{split}_goals.json"
     extract_goals(data, output_goals_file, keep_values=FLAGS.include_values)
-    goals = load_goals(output_goals_file)
+    goals = load_json(output_goals_file)
     output_goals_hash_file = f"{value_flag}_{clean_flag}_{split}_goals_hash.json"
     hash_goals(goals, output_goals_hash_file)
-    hashed_goals = load_goals(output_goals_hash_file)
+    hashed_goals = load_json(output_goals_hash_file)
     multi_ref_file = f"{value_flag}_{clean_flag}_{split}_reference_map.json"
     create_multi_ref_map(hashed_goals, multi_ref_file)
 

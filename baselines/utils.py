@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import json
 import logging
@@ -7,18 +9,21 @@ import shutil
 import subprocess
 from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
 from convlab2 import DATA_ROOT, BiSession
-from convlab2.policy.rule.multiwoz.policy_agenda_multiwoz import Goal
 from convlab2.task.multiwoz.goal_generator import GoalGenerator
 
-EXCLUDE_KEYS_BOOK = ["pre_invalid", "invalid"]  # type: List[str]
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+EXCLUDE_KEYS_BOOK = ["pre_invalid", "invalid"]  # type: list[str]
 """Fields to exclude from ``book`` sub-goal as they do not appear in convlab goal format.
 """
-EXCLUDE_FIELDS = ["topic", "message"]  # type: List[str]
+EXCLUDE_FIELDS = ["topic", "message"]  # type: list[str]
 """Fields to be removed from goal format because they do not appear in convlab goal format.
 """
 KEEP_INACTIVE_DOMAINS = False
@@ -104,7 +109,7 @@ class MultiWOZ21Dialogue:
 
     def add_goal(self, goal: dict):
         """Add goal information to the dialog."""
-        self.dialogue["goal"] = goal
+        self.dialogue["goal"] = deepcopy(goal)
 
     def add_final_goal(self, goal: dict):
         """Add goal after pre-processing steps by user simulator."""
@@ -117,8 +122,8 @@ class MultiWOZ21Dialogue:
     def add_turn(
         self,
         utterance: str,
-        nlu_output: Optional[List[List[str]]] = None,
-        pol_output: Optional[List[List[str]]] = None,
+        nlu_output: Optional[list[list[str]]] = None,
+        pol_output: Optional[list[list[str]]] = None,
         dst_state: Optional[dict] = None,
         keep_dst_state: bool = False,
     ):
@@ -170,7 +175,7 @@ class MultiWOZ21Dialogue:
         self.dialogue["log"].append(this_turn)
         self._turn_index += 1
 
-    def add_field(self, field_name: str, actions_list: Optional[List[List[str]]]):
+    def add_field(self, field_name: str, actions_list: Optional[list[list[str]]]):
         """Populate a given field from a turn with information from an action list.
         The action list is usually the output of a policy or NLU module (see ``add_turn``
         method for more details.
@@ -180,7 +185,7 @@ class MultiWOZ21Dialogue:
         field_name
             Name of the field. This should be in the dict output by the ``create_turn`` method.
         actions_list
-            List of actions to be included in the field.
+            list of actions to be included in the field.
         """
         # TODO: DESCRIBE FIELD FORMATTING
         current_turn = self.get_current_turn()
@@ -297,9 +302,15 @@ def remove_empty_fail_fields(user_goal: dict):
 class CorpusGoalGenerator(GoalGenerator):
     """GoalGenerator wrapper class which returns a goal from the corpus instead of sampling a goal."""
 
-    def __init__(self, dialogue: dict):
+    def __init__(self, dialogue: dict, standardise: bool = True):
         """Create a goal generator that returns the corpus goal. This works by first retrieving the
-        domain ordering according using the GoalGenerator.__init__ and then"""
+        domain ordering according using the GoalGenerator.__init__ and then
+
+        Parameters
+        ----------
+        standardise
+            Whether the goal should be standardised.
+        """
         dial_id = list(dialogue.keys())[0]
         # save dialogue as a tmp file in order to extract
         # the domain ordering using the GoalGenerator initialisation
@@ -318,9 +329,17 @@ class CorpusGoalGenerator(GoalGenerator):
         #  (see dialogue annotations for details).
         self.domain_ordering = tuple(self.domain_ordering_dist.keys())[
             0
-        ]  # type: Tuple[str]
+        ]  # type: tuple[str]
         # user goal extracted from corpus, processed to match convlab format
-        self.user_goal = self._clean_goal(dialogue[dial_id]["goal"])
+        self.user_goal = dialogue[dial_id]["goal"]
+        if standardise:
+            self.standardise_goal(dialogue[dial_id]["goal"])
+        if not self.domain_ordering:
+            self.domain_ordering = list(self.user_goal.keys())
+            if len(self.user_goal.keys()) > 1:
+                logger.warning(
+                    f"Domain ordering estimation failed for dialogue {dial_id}, ordering will be random"
+                )
         self.user_goal["domain_ordering"] = self.domain_ordering
 
     def get_user_goal(self):
@@ -352,34 +371,39 @@ class CorpusGoalGenerator(GoalGenerator):
         clean_book_subgoal(corpus_goal)
         return corpus_goal
 
+    @staticmethod
+    def standardise_goal(corpus_goal: dict) -> dict:
+        """Cleans the goal and nsures the constraints that are not changed for all domains (inc booking) appear
+        both in the initial goal and goal change field. See clean_goal method for information about cleaning operations.
 
-def initialise_goal(dialogue: dict) -> Goal:
-    """Create a convlab Goal object initialise with the goal of the input dialogue. This object is
-    used to initialise a dialogue session which will follow the corpus ground truth dialogues.
+        Parameters
+        ---------
+        corpus_goal
+            Goal as extracted from the MultiWOZ21 data.json file.
+        """
 
-    Parameters
-    ----------
-    dialogue
-        A dictionary mapping a dialogue id to the turns and dialogue goal. Format::
+        CorpusGoalGenerator._clean_goal(corpus_goal)
+        fields = ["info", "book"]
+        for domain in corpus_goal:
+            domain_goal = corpus_goal[domain]
+            for field in fields:
+                if field in domain_goal and f"fail_{field}" in domain_goal:
+                    assert domain_goal[field]
+                    assert domain_goal[f"fail_{field}"]
+                    field_keys = domain_goal[field].keys()
+                    fail_field_keys = domain_goal[f"fail_{field}"].keys()
+                    if field == "info":
+                        assert field_keys == fail_field_keys
+                        continue
+                    for slot in field_keys:
+                        if slot not in fail_field_keys:
+                            domain_goal[f"fail_{field}"][slot] = domain_goal[field][
+                                slot
+                            ]
+        return corpus_goal
 
-            {
-            'dialogue_id':
-                'goal': dict[str], dictionary containing goal for each domain, topic and message,
-                'log': list[dict], containing the dialogue turns and annotations
-            }
 
-    Returns
-    -------
-    goal
-        A Goal object initialised with goal from the input dialogue.
-    """
-
-    goal_generator = CorpusGoalGenerator(dialogue)
-    goal = Goal(goal_generator)
-    return goal
-
-
-def load_multiwoz(split: str) -> Dict[str, dict]:
+def load_multiwoz(split: str) -> dict[str, dict]:
     """Unzip multiwoz splits and load the content in a dictionary mapping dialogue IDs to dialogues."""
     data_dir = os.path.join(DATA_ROOT, "multiwoz")
     split_path = os.path.join(data_dir, f"{split}.json")
@@ -412,7 +436,7 @@ def print_turn(user_response, sys_response, sess: Optional[BiSession] = None):
     print("")
 
 
-def save_dialogues(dialogues: Dict[str, dict], dirname: str, chunksize: int):
+def save_dialogues(dialogues: dict[str, dict], dirname: str, chunksize: int):
     """Save simulated dialogues in .json format.
 
     Generates a `dialogue_id` text file  of IDs that can be used to split the data
@@ -512,3 +536,72 @@ def save_metadata(model_metadata: dict, dirname: str):
 def get_commit_hash():
     """Returns the commit hash for the current HEAD."""
     return subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode()
+
+
+def load_json(path: str):
+    with open(path, "r") as f:
+        content = json.load(f)
+    return content
+
+
+def load_txt(path: str) -> list[str]:
+    with open(path, "r") as f:
+        content = [line.strip() for line in f.readlines()]
+    return content
+
+
+def load_goals(goals_path: str, filter_path: Optional[str] = None) -> dict:
+    """Safe load & filter function for goals.
+
+    Parameters
+    ----------
+    goals_path
+        Path to a .json file the corpus/goals mapping should be loaded from.
+    filter_path
+        Path to a .txt file containing a subset of IDs of the dialogues to be generated. Should be a subset
+        of the keys of the mapping loaded from `goals_path`.
+    """
+
+    goal_ids = []
+    goals_path = goals_path
+    try:
+        goals = load_json(goals_path)
+    except FileNotFoundError:
+        logger.error(f"Could not find goals file at path {goals_path}")
+        raise ValueError
+    if filter_path:
+        try:
+            goal_ids = load_txt(filter_path)
+        except FileNotFoundError:
+            logging.warning(
+                f"Could not find filter file at {filter_path}, all goals will be used"
+            )
+    if not isinstance(goals, dict):
+        raise TypeError(
+            f"Expected goals to be a mapping with dial ID as key and a 'goal' field but got type {type(goals)}"
+        )
+    if goal_ids:
+        goals = {g_id: goals[g_id] for g_id in goal_ids}
+    return goals
+
+
+def generate_multiwoz21_train_id_file(
+    multiwoz21_path: str, test_ids_fpath: str, val_ids_fpath
+):
+    """Generates a .txt file with train ID files for MultiWOZ 2.1.
+
+    Parameters
+    ----------
+    multiwoz21_fpath:
+        Path to the MultiWOZ 2.1 `data.json` file.
+    test_ids_fpath, val_ids_fpath
+        Paths to files containing the test and validation dialogue IDs.
+        :param multiwoz21_path:
+    """
+
+    not_train_ids = set(load_txt(test_ids_fpath) + load_txt(val_ids_fpath))
+    multiwoz_21 = load_json(multiwoz21_path)
+    all_ids = [dial_id for dial_id in multiwoz_21]
+    train_ids = [dial_id for dial_id in all_ids if dial_id not in not_train_ids]
+    with open("trainListFile", "w") as f:
+        f.writelines(train_ids)
