@@ -11,4 +11,10 @@ dependencies:
   - click
   - pip:
      - --editable=git+https://github.com/thu-coai/ConvLab-2.git@a83b8f108dce3f0f7bb801c7abe403423436458f#egg=Convlab-2
+      # BASICS
+     - prettyprinter
      - omegaconf>=2.1.0, <3.0.0
+      # VISUALISATION
+     - jupyter
+     - matplotlib
+     - seaborn

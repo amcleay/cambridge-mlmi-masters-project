@@ -11,6 +11,12 @@ dependencies:
   - click
   - pip:
      - -e .  # install git checkout of crazyneuraluser in editable mode
+     # BASICS
+     - prettyprinter
+      # VISUALISATION
+     - jupyter
+     - seaborn
+     - matplotlib
      # add here only pip-packages that are not available in conda/conda-forge! E.g.:
      # - icecream
      # - jax
