@@ -9,6 +9,7 @@ import shutil
 import subprocess
 from collections import defaultdict
 from copy import deepcopy
+from datetime import datetime
 from typing import Optional, Union
 
 import numpy as np
@@ -30,6 +31,12 @@ KEEP_INACTIVE_DOMAINS = False
 """If set to `False`, this variable removes inactive domains from goal annotation to keep the
 goal consistent with convlab format.
 """
+
+
+def get_datetime() -> str:
+    """Returns the current date and time."""
+    now = datetime.now()
+    return now.strftime("%d/%m/%Y %H:%M:%S")
 
 
 def ensure_determinism(opts):

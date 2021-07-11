@@ -80,7 +80,7 @@ class PathMapping:
         self.pckg = data_pckg_or_path
         try:
             self.data_root = importlib_resources.files(data_pckg_or_path)
-        except ModuleNotFoundError:
+        except (ModuleNotFoundError, NameError):
             if isinstance(data_pckg_or_path, str):
                 self.data_root = pathlib.Path(data_pckg_or_path)
         self._all_files = [r for r in self.data_root.iterdir()]

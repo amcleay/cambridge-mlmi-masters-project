@@ -19,6 +19,7 @@ from utils import (
     MultiWOZ21Dialogue,
     ensure_determinism,
     get_commit_hash,
+    get_datetime,
     load_goals,
     print_turn,
     save_dialogues,
@@ -133,6 +134,7 @@ def generate_dialogues(config):
         "SYSTEM": sys_metadata,
         "generating_config": OmegaConf.to_container(config),
         "commit_hash": get_commit_hash(),
+        "date": get_datetime(),
     }
 
     gen_config = config.generation
