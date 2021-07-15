@@ -1,0 +1,29 @@
+{
+    "food": [
+        "chinese"
+    ],
+    "pricerange": [
+        "cheap"
+    ],
+    "time": [
+        "13:00"
+    ],
+    "day": [
+        "tuesday"
+    ],
+    "people": [
+        1
+    ],
+    "arriveby": [
+        "13:00"
+    ],
+    "leaveat": [
+        "11:00"
+    ],
+    "internet": [
+        "no"
+    ],
+    "parking": [
+        "no"
+    ]
+}

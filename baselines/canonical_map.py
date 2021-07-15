@@ -348,6 +348,7 @@ map = {
             "North section of Cambridge",
         ],
         "dontcare": [
+            "do nt care",
             "any area",
             "any",
             "all of Cambridge",
@@ -823,6 +824,7 @@ map = {
             "any price point",
             "any price range",
             "regardless of price",
+            "do nt care",
         ],
         "noise": {
             "annotation": [
@@ -2973,6 +2975,7 @@ map = {
             "all week",
             "everday",
             "every day",
+            "do nt care",
         ],
     },
     "people": {
@@ -4447,6 +4450,7 @@ map = {
                 "24:44": [],
                 "24:45": [],
                 "24:54": [],
+                "dontcare": ["do nt care"],
             },
             "noise": {
                 "annotation": [
@@ -4586,6 +4590,7 @@ map = {
                 "01:00": ["1:00"],
                 "20:30": [],
                 "24:30": [],
+                "dontcare": ["do nt care"],
                 "noise": {
                     "co_reference": [
                         "in time for your reservation",
@@ -5188,6 +5193,7 @@ map = {
                     "23:60 .",
                 ],
                 "24:07": [],
+                "dontcare": ["do nt care"],
             },
             "noise": {
                 "annotation": [
@@ -5543,6 +5549,7 @@ map = {
                 "10:50": [],
                 "15:25": [],
                 "21:25": [],
+                "dontcare": ["do nt care"],
             },
             "noise": {
                 "interval": [
@@ -5659,7 +5666,7 @@ map = {
                 "yes",
             ]
         },
-        "dontcare": ["drop the star rating"],
+        "dontcare": ["drop the star rating", "do nt care"],
     },
     "stay": {
         "1": [
@@ -5714,17 +5721,21 @@ map = {
                 ],
             },
             "hotel": {},
-            "not_in_goal": {
-                "hotel": {
-                    "6": [],
-                    "7": [],
-                    "8": [],
-                }
+        },
+        "not_in_goal": {
+            "hotel": {
+                "6": ["six"],
+                "7": ["seven"],
+                "8": ["eight"],
             },
         },
     },
-    "parking": {"no": [], "yes": ["free"], "not_in_goal": {"dontcare": []}},
-    "internet": {"no": [], "yes": ["free"], "not_in_goal": {"dontcare": []}},
+    "parking": {"no": [], "yes": ["free"], "not_in_goal": {"dontcare": ["do nt care"]}},
+    "internet": {
+        "no": [],
+        "yes": ["free"],
+        "not_in_goal": {"dontcare": ["do nt care"]},
+    },
     "type": {
         "hotel": [
             "a hotel",
@@ -5950,7 +5961,7 @@ map = {
             "theatr",
             "theatre 's",
         ],
-        "dontcare": ["any kind", "all types of"],
+        "dontcare": ["any kind", "all types of", "do nt care"],
         "noise": {
             "hotel": {
                 "annotation": [
@@ -6126,5 +6137,24 @@ map = {
     },
 }
 
+
 with open("raw_canonical_map.json", "w") as f:
     json.dump(map, f, indent=4)
+
+
+with open("goal_new_values.json", "w") as f:
+    json.dump(
+        {
+            "food": ["chinese"],
+            "pricerange": ["cheap"],
+            "time": ["13:00"],
+            "day": ["tuesday"],
+            "people": [1],
+            "arriveby": ["13:00"],
+            "leaveat": ["11:00"],
+            "internet": ["no"],
+            "parking": ["no"],
+        },
+        f,
+        indent=4,
+    )
