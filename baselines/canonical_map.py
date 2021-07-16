@@ -664,6 +664,7 @@ map = {
             "italian and so on" "italian|indian",
             "and indian",
         ],
+        "not_in_goal": {"dontcare": ["do nt care"]},
     },
     "pricerange": {
         "cheap": [
