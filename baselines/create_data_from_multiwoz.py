@@ -1293,13 +1293,13 @@ class Processor(object):
             )
             if "goal" in dialogs[dial_id]:
                 goal = dialogs[dial_id]["goal"]
-                if FLAGS.clean_goals:
+                if FLAGS.standardise_goal:
                     goal = CorpusGoalGenerator.standardise_goal(goal)
             else:
                 goal = {}
             if "final_goal" in dialogs[dial_id]:
                 final_goal = dialogs[dial_id]["final_goal"]
-                if FLAGS.clean_goals:
+                if FLAGS.standardise_goal:
                     final_goal = CorpusGoalGenerator.standardise_goal(goal)
             else:
                 final_goal = {}
