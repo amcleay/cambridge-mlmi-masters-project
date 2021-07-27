@@ -230,7 +230,7 @@ def main():
     lowercase_uniq_values(canonical_map)
 
     with open("canonical_map.json", "w") as f:
-        json.dump(canonical_map, f, indent=4)
+        json.dump(canonical_map, f, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
