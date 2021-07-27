@@ -1236,6 +1236,7 @@ map = {
             "huntington marriott hotel city center",
             "hutington marriot",
             "marriott",
+            "huntingdon",
         ],
         "kirkwood house": [
             "the kirkwood guesthouse",
@@ -1658,6 +1659,7 @@ map = {
             "michehouse cafe",
             "the michael house cafe",
             "the michaelhouse cafe",
+            "mic",
         ],
         "midsummer house restaurant": [
             "midsummer house",
@@ -3011,6 +3013,7 @@ map = {
         "train": {
             "birmingham new street": [
                 "brimingham new street",
+                " Birmingham New Strretm",
                 "birmingham",
                 "new street",
                 "birmingham new street station",
@@ -3269,7 +3272,7 @@ map = {
                 "the hotel du vin and bistro",
             ],
             "hughes hall": [],
-            "huntingdon marriott hotel": ["huntingdon marriot hotel"],
+            "huntingdon marriott hotel": ["huntingdon marriot hotel", "huntingdon"],
             "india house": [],
             "jesus college": [],
             "jesus green outdoor pool": [],
@@ -3320,7 +3323,7 @@ map = {
                 "meze bar and restaurant",
                 "meze bar restaurant .",
             ],
-            "michaelhouse cafe": [],
+            "michaelhouse cafe": ["mic"],
             "midsummer house restaurant": [],
             "milton country park": [
                 "country park",
@@ -3496,7 +3499,7 @@ map = {
                 "sala thong": [],
                 "stazione restaurant and coffee bar": ["stazione restaurant"],
                 "archway house": [],
-                "birmingham new street train station": [],
+                "birmingham new street train station": [" Birmingham New Strretm"],
                 "cafe jello gallery": [],
                 "cambridge artworks": [],
                 "cambridge road church of christ": [],
@@ -3545,7 +3548,7 @@ map = {
     },
     "departure": {
         "train": {
-            "birmingham new street": ["birmingham"],
+            "birmingham new street": ["birmingham", " Birmingham New Strretm"],
             "bishops stortford": [
                 "bishop 's stortford",
                 "bishop stortford",
@@ -3659,7 +3662,7 @@ map = {
             "ballare": [],
             "bangkok city": [],
             "bedouin": [],
-            "birmingham new street train station": [],
+            "birmingham new street train station": [" Birmingham New Strretm"],
             "bishops stortford train station": [],
             "bloomsbury restaurant": [],
             "bridge guest house": [
@@ -3749,7 +3752,7 @@ map = {
                 "the hotel du vin and bistro",
             ],
             "hughes hall": [],
-            "huntingdon marriott hotel": [],
+            "huntingdon marriott hotel": ["huntingdon"],
             "india house": [],
             "j restaurant": [
                 "j restauran",
@@ -4120,7 +4123,6 @@ map = {
                 "08:58": [
                     "8:58am",
                 ],
-                "09.52": [],
                 "09:01": [],
                 "09:06": [],
                 "09:07": [],
@@ -4142,7 +4144,7 @@ map = {
                     "9:51",
                     "9:51 am",
                 ],
-                "09:52": ["9:52"],
+                "09:52": ["9:52", "09.52"],
                 "09:54": ["9:54"],
                 "09:55": ["9:55"],
                 "09:56": [],
@@ -4167,10 +4169,7 @@ map = {
                 "10:55": [],
                 "10:56": [],
                 "10:58": [],
-                "11.27": [],
-                "11.35": [],
                 "11:52": ["11;52"],
-                "11.58": [],
                 "11:01": [],
                 "11:06": [],
                 "11:07": [],
@@ -4178,9 +4177,9 @@ map = {
                 "11:09": [],
                 "11:23": [],
                 "11:24": [],
-                "11:27": [],
+                "11:27": ["11.27"],
                 "11:32": [],
-                "11:35": [],
+                "11:35": ["11.35"],
                 "11:38": [],
                 "11:39": [],
                 "11:44": [],
@@ -4191,7 +4190,7 @@ map = {
                 "11:54": [],
                 "11:55": [],
                 "11:56": [],
-                "11:58": [],
+                "11:58": ["11.58"],
                 "12:01": [],
                 "12:06": [],
                 "12:07": [],
@@ -5731,10 +5730,14 @@ map = {
             },
         },
     },
-    "parking": {"no": [], "yes": ["free"], "not_in_goal": {"dontcare": ["do nt care"]}},
+    "parking": {
+        "no": [],
+        "yes": ["free", "none"],
+        "not_in_goal": {"dontcare": ["do nt care"]},
+    },
     "internet": {
         "no": [],
-        "yes": ["free"],
+        "yes": ["free", "none"],
         "not_in_goal": {"dontcare": ["do nt care"]},
     },
     "type": {
