@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import pathlib
 import re
@@ -615,7 +617,7 @@ def actions_iterator(frame: dict, patterns: Optional[List[str]] = None) -> dict:
         If supplied, only actions whose ``act`` field is matched by at least one pattern are returned.
     """
 
-    for act_dict in frame["actions"]:
+    for act_dict in frame.get("actions", []):
         if patterns:
             for pattern in patterns:
                 if re.search(pattern, act_dict["act"]):
@@ -711,7 +713,7 @@ def get_turn_actions(
     formatted_actions = defaultdict(list)
 
     for frame in turn["frames"]:
-        service = frame["service"]
+        service = frame.get("service", "")
         # return patterns only for certain services
         if service_patterns:
             if not any((re.search(pattern, service) for pattern in service_patterns)):
@@ -747,7 +749,7 @@ def get_turn_actions(
     return formatted_actions
 
 
-def get_dialogue_outline(dialogue: dict) -> List[Dict[str, List[str]]]:
+def get_dialogue_outline(dialogue: dict) -> Dict[str, List[Dict[str, List[str]]]]:
     """
     Retrieves the dialogue outline, consisting of USER and SYSTEM acts, which are optionally parameterized by slots
     or slots and values.
@@ -770,10 +772,12 @@ def get_dialogue_outline(dialogue: dict) -> List[Dict[str, List[str]]]:
         For each turn, a list comprising of the dialogue acts (e.g., INFORM, REQUEST) in that turn along with their
         parameters (e.g., 'food'='mexican', 'address').
     """
-    outline = []
+    outline = {"dialogue": [], "nlu": []}
     for i, turn in enumerate(dialogue["turns"], start=1):
         actions = get_turn_actions(turn)
-        outline.append(actions)
+        nlu_actions = get_turn_actions(turn.get("nlu", {}))
+        outline["dialogue"].append(actions)
+        outline["nlu"].append(nlu_actions)
     return outline
 
 
@@ -801,10 +805,139 @@ def print_dialogue_outline(dialogue: dict, text: bool = False):
     """
     outlines = get_dialogue_outline(dialogue)
     utterances = get_utterances(dialogue) if text else [""] * len(outlines)
-    assert len(outlines) == len(utterances)
-    for i, (outline, utterance) in enumerate(zip(outlines, utterances)):
+    assert len(outlines["dialogue"]) == len(utterances)
+    for i, (dial_outline, nlu_outline, utterance) in enumerate(
+        zip(outlines["dialogue"], outlines["nlu"], utterances)
+    ):
         print(f"Turn: {i}:{utterance}")
-        print_turn_outline(outline)
+        print_turn_outline(dial_outline)
+        print("#" * 15, " NLU ", "#" * 15)
+        print_turn_outline(nlu_outline)
+        print("")
+
+
+def get_params(
+    actions: list[str],
+    include_values: bool = True,
+    slot_value_sep: str = SLOT_VALUE_SEP,
+    act_slot_sep: str = ACT_SLOT_SEP,
+    use_lowercase: bool = True,
+) -> list[str]:
+    """Retrieve action parameters given a formatted action.
+
+    # TODO: DESCRIBE ACTION FORMAT OR X-REF TO REL DOC
+    """
+    action_params = []
+    for f_action in actions:
+        this_action_params = "".join(f_action.split(act_slot_sep)[1:])
+        if this_action_params:
+            if use_lowercase:
+                action_params.append(this_action_params.lower())
+            else:
+                action_params.append(this_action_params)
+    if not include_values:
+        action_params = [
+            "".join(action_param.split(slot_value_sep)[0])
+            for action_param in action_params
+        ]
+    return action_params
+
+
+def get_turn_action_params(
+    turn: dict,
+    act_patterns: Optional[list[str]] = None,
+    service_patterns: Optional[list[str]] = None,
+    include_values: bool = True,
+    use_lowercase: bool = True,
+    slot_value_sep: str = SLOT_VALUE_SEP,
+    multiple_val_sep: str = MULTIPLE_VALUE_SEP,
+) -> dict[str, list[str]]:
+    """Obtain the parameters for all the actions in the turn.
+    # TODO: ADD DOCS
+    """
+
+    turn_actions_by_service = get_turn_actions(
+        turn,
+        act_patterns=act_patterns,
+        service_patterns=service_patterns,
+        use_lowercase=use_lowercase,
+        slot_value_sep=slot_value_sep,
+        multiple_val_sep=multiple_val_sep,
+    )
+
+    turn_action_params = defaultdict(list)
+    for service, formatted_actions in turn_actions_by_service.items():
+        action_params = get_params(
+            formatted_actions,
+            include_values=include_values,
+            slot_value_sep=slot_value_sep,
+        )
+        turn_action_params[service] = action_params
+
+    return turn_action_params
+
+
+_TRANSACTION_FAILURE_ACT_PATTERNS = ["NoBook", "nobook"]
+
+
+def is_nobook_dial(dial):
+
+    for sys_turn in dialogue_iterator(dial, system=True, user=False):
+        sys_actions = get_turn_actions(
+            sys_turn,
+            act_patterns=_TRANSACTION_FAILURE_ACT_PATTERNS,
+            use_lowercase=True,
+        )
+        if sys_actions:
+            assert "booking" in sys_actions or "Booking" in sys_actions
+            return True
+
+
+def is_booking_ref_dial(dial):
+
+    for sys_turn in dialogue_iterator(dial, system=True, user=False):
+
+        sys_action_params_by_service = get_turn_action_params(
+            sys_turn,
+            use_lowercase=True,
+        )
+        for domain in sys_action_params_by_service:
+            slots = [
+                par.split(SLOT_VALUE_SEP)[0]
+                for par in sys_action_params_by_service[domain]
+            ]
+            if "ref" in slots:
+                return True
+
+
+def has_noofer(dial):
+
+    for sys_turn in dialogue_iterator(dial, system=True, user=False):
+
+        sys_actions_by_service = get_turn_actions(
+            sys_turn,
+            act_patterns=["noofer", "NoOffer"],
+            use_lowercase=True,
+        )
+        for domain in sys_actions_by_service:
+            if sys_actions_by_service[domain]:
+                return True
+
+
+def has_choice(dial):
+
+    _CHOICE_PATTERNS = ["choice", "Choice"]
+
+    for sys_turn in dialogue_iterator(dial, system=True, user=False):
+        sys_actions_by_service = get_turn_action_params(
+            sys_turn, include_values=False, use_lowercase=True
+        )
+        for domain in sys_actions_by_service:
+            if any(
+                pattern in sys_actions_by_service[domain]
+                for pattern in _CHOICE_PATTERNS
+            ):
+                return True
 
 
 if __name__ == "__main__":
@@ -820,13 +953,26 @@ if __name__ == "__main__":
 
     from prettyprinter import pprint
 
+    cont = {True: ["y", "yes"], False: ["n", "no"]}
+    # for dial_id in unmached_repeats:
+    #     print(f"{dial_id} unmatched constraints", unmached_repeats[dial_id])
+    #     print("#################################################")
     for _, dial in split_iterator(
         "test",
-        return_only={"PMUL4462.json"},
-        data_pckg="/home/mifs/ac2123/dev/ConvLab-2/baselines/data/multiwoz21",
+        return_only={"983.json"},
+        data_pckg="/home/mifs/ac2123/dev/crazyneuraluser/models/usr_baseline_sys_baseline/sgd"
+        # data_pckg="/home/mifs/ac2123/dev/ConvLab-2/baselines/data/multiwoz21",
     ):
+        print(_)
+        # if has_choice(dial):
         print(pprint(dial["goal"]))
         print_dialogue_outline(dial, text=True)
+        # next_dial = input("Continue: [Y/n]")
+        # if next_dial.lower() not in cont[True]:
+        #     print("User aborted")
+        #     break
+        # else:
+        #     print(f"Skipping {dial_id}")
 
     # dialogues = {}
     # for split in MULTIWOZ_SPLITS:
