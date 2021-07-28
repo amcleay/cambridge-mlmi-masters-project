@@ -1177,6 +1177,7 @@ map = {
             "the gonville hotal",
             "the gonville hote",
             "the gonville hotel",
+            "gonville hotel hotel",
             "gonville hote",
             "gonville hotel ?",
             "goonville hotel",
@@ -1350,13 +1351,14 @@ map = {
             "meze bar and restaurant",
             "meze bar restaurant .",
         ],
-        "pizza express Fen Ditton": [
+        "pizza express fen ditton": [
             "pizza express fen ditton",
             "pizza express at fen ditton",
             "pizza express fed ditton",
             "pizza express at fen ditton",
             "pizza express fen ditto",
             "pizza express fen ditton",
+            "pizza express fen ditton restaurant",
         ],
         "ali baba": [
             "ali baba restaurant",
@@ -1859,6 +1861,7 @@ map = {
             "gardenia",
             "la gardenia",
             "the gardina",
+            "the gardenia restaurant",
         ],
         "the golden curry": [
             "golden curry",
@@ -3251,7 +3254,11 @@ map = {
                 "golden house .",
                 "golden house chinese restaurant",
             ],
-            "gonville hotel": ["the gonville hotel", "gonville"],
+            "gonville hotel": [
+                "the gonville hotel",
+                "gonville",
+                "gonville hotel hotel",
+            ],
             "gourmet burger kitchen": [],
             "graffiti": [
                 "grafitti",
@@ -3347,7 +3354,10 @@ map = {
                 "peoples portraits exhibition at girton college",
             ],
             "pipasha restaurant": ["pipasha"],
-            "pizza express Fen Ditton": ["pizza express"],
+            "pizza express fen ditton": [
+                "pizza express",
+                "pizza express fen ditton restaurant",
+            ],
             "pizza hut cherry hinton": [],
             "pizza hut city centre": [],
             "pizza hut fen ditton": [
@@ -3413,7 +3423,7 @@ map = {
             "the gandhi": [
                 "the ghandi",
             ],
-            "the gardenia": [],
+            "the gardenia": ["the gardenia restaurant"],
             "the golden curry": [
                 "golden curry",
             ],
@@ -3734,6 +3744,7 @@ map = {
             "gonville hotel": [
                 "the gonville hotel",
                 "gonville",
+                "gonville hotel hotel",
             ],
             "gourmet burger kitchen": [],
             "graffiti": [
@@ -3815,7 +3826,7 @@ map = {
             "pembroke college": [],
             "peterborough train station": [],
             "pipasha restaurant": [],
-            "pizza express Fen Ditton": [],
+            "pizza express fen ditton": ["pizza express fen ditton restaurant"],
             "pizza hut cherry hinton": [],
             "pizza hut city centre": [],
             "pizza hut fen ditton": [],
@@ -3876,7 +3887,7 @@ map = {
             ],
             "the fitzwilliam museum": [],
             "the gandhi": [],
-            "the gardenia": [],
+            "the gardenia": ["the gardenia restaurant"],
             "the golden curry": [],
             "the good luck chinese food takeaway": [
                 "good luck",
