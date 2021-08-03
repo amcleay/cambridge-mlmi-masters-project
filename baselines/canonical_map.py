@@ -2170,6 +2170,7 @@ map = {
             "gallery at twelve high st",
             "the gallery 's",
             "the gallery at twelve a high street",
+            "the gallery at twelve",
         ],
         "gonville and caius college": [
             "gonville and caius",
@@ -3007,6 +3008,7 @@ map = {
             "4|7",
         ],
         "not_in_goal": {
+            "9": [],
             "10": [],
             "15": [],
             "19": [],
@@ -3226,7 +3228,11 @@ map = {
             "don pasquale pizzeria": [
                 "don pasquale pizzera",
             ],
-            "downing college": [],
+            "downing college": [
+                "downing",
+                "the downing college",
+                "downing colleg",
+            ],
             "efes restaurant": [
                 "efes",
                 "efe 's restaurant",
@@ -3249,7 +3255,10 @@ map = {
             "funky fun house": [
                 "the funky fun house",
             ],
-            "gallery at twelve a high street": ["gallery at twelve a high"],
+            "gallery at twelve a high street": [
+                "gallery at twelve a high",
+                "the gallery at twelve",
+            ],
             "golden house": [
                 "golden house .",
                 "golden house chinese restaurant",
@@ -3680,6 +3689,7 @@ map = {
             ],
             "broughton house gallery": [],
             "broxbourne train station": [],
+            "byard art": [],
             "cafe jello gallery": [],
             "caffe uno": ["cafe uno"],
             "cambridge and county folk museum": [],
@@ -3738,7 +3748,7 @@ map = {
             "funky fun house": [
                 "the funky fun house",
             ],
-            "gallery at twelve a high street": [],
+            "gallery at twelve a high street": ["the gallery at twelve"],
             "golden house": [],
             "golden wok": [],
             "gonville hotel": [
@@ -3929,7 +3939,17 @@ map = {
                     "the acorn",
                 ],
                 "camboats": [],
+                "the copper kettle": [
+                    "copper kettle",
+                    "copper kettle",
+                    "the cooper kettle",
+                ],
                 "churchill college": [],
+                "downing college": [
+                    "downing",
+                    "the downing college",
+                    "downing colleg",
+                ],
                 "cineworld cinema": [],
                 "corpus christi": [],
                 "jingling noodle bar": [],
@@ -4743,6 +4763,7 @@ map = {
                     "0524",
                 ],
                 "05:29": [],
+                "05:30": [],
                 "05:32": [],
                 "05:35": [
                     "5:35 am",
