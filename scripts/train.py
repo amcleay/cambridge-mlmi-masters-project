@@ -16,6 +16,7 @@ import logging
 import json
 import tqdm
 import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import wandb
 
@@ -254,7 +255,7 @@ class Modal(object):
             # Set the project where this run will be logged
             project="User Simulator MPhil Project", 
             # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
-            name="Training UBAR - One Epoch", 
+            name="Training UBAR", 
             # Track hyperparameters and run metadata
             config={
             "dataset": cfg.data_path,
@@ -348,7 +349,6 @@ class Modal(object):
                                 'Global step: {}, epoch step: {}, interval loss: {:.4f}'.format(
                                     global_step, epoch_step, loss_scalar
                                 ))
-                            wandb.log({"loss": logging_loss})
 
                             # validate
                             # add to tensorboard...
@@ -357,6 +357,9 @@ class Modal(object):
                                 for k, v in results.items():
                                     eval_key = "eval_{}".format(k)
                                     logs[eval_key] = v
+                                
+                                wandb.log({"tr_loss": logging_loss, "bleu": results['bleu'], "success": results['success'],
+                                            "match": results['match'], "score": results['score']})
 
                             if self.tb_writer:
                                 for k, v in logs.items():
