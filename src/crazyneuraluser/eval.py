@@ -3,8 +3,8 @@ from collections import Counter, OrderedDict
 from nltk.util import ngrams
 
 from crazyneuraluser import ontology
-from config import global_config as cfg
-from clean_dataset import clean_slot_values
+from crazyneuraluser.config import global_config as cfg
+from crazyneuraluser.clean_dataset import clean_slot_values
 
 
 class BLEUScorer(object):

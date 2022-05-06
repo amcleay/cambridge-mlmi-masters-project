@@ -5,8 +5,8 @@ import random
 import logging
 import json
 import spacy
-import utils
-import ontology
+from crazyneuraluser import utils
+from crazyneuraluser import ontology
 from copy import deepcopy
 from collections import OrderedDict
 from crazyneuraluser.db_ops import MultiWozDB

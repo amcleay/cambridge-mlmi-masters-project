@@ -1,5 +1,5 @@
 import json, random, sqlite3
-from ontology import all_domains, db_domains
+from crazyneuraluser.ontology import all_domains, db_domains
 
 class MultiWozDB(object):
     def __init__(self, db_paths):

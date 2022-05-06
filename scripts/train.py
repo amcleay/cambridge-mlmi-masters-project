@@ -16,7 +16,6 @@ import logging
 import json
 import tqdm
 import numpy as np
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import wandb
 
