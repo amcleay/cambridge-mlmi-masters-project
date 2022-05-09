@@ -1,27 +1,43 @@
-# Cambridge Masters Project
-Joint Learning of Practical Dialogue Systems and User Simulators
+# crazyneuraluser
 
-## Environment setup
+A powerful, the best, domain independent, smart and awesome user model for your system development and evaluation.
 
-1. Create an environment `crazyneuraluser` with the help of [conda]
-   ```
-   conda env create -f environment.yml
-   ```
-2. Activate the new environment with:
-   ```
-   conda activate crazyneuraluser
-   ```
-3. Install a version of `pytorch` compatible with your hardware (see the [pytorch website](https://pytorch.org/get-started/previous-versions/)). E.g.:
-   ```
-   pip install torch --extra-index-url https://download.pytorch.org/whl/cu113
-   ```
 
-4. Install `spacy` and download the tokenization tool in spacy:
+## Running baselines
+
+### Environment setup 
+
+In order to set up the necessary environment:
+
+1. Create an environment `neuraluserbaselines` with the help of [conda]:
    ```
-   pip install spacy'
-   python -m spacy download en_core_web_sm
+   conda env create -f baselines_environment.lock.yml
+   ```
+2. activate the new environment with:
+   ```
+   conda activate neuraluserbaselines
    ```
 
+> **_NOTE:_**  The conda environment will have `convlab-2` installed in editable mode - it will appear under `src/convlab-2`.
+
+> **_NOTE:_**  For reproducibility, it is essential to use `baselines_environment.lock.yml` as opposed to `baselines_environment.yml` when creating the environment.
+
+> **_NOTE:_** Due to available hardware, we could not run `convlab2` with the `pytorch` version that comes with their installation. We used version `1.7.1` instead. For our hardware we followed the steps:
+
+1. Uninstall `pytorch`
+   ```
+   pip uninstall pytorch
+   ```
+2. Install hardware compatible version of `pytorch`
+   ```
+   pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
+   ```
+
+If your device is not compatible with the `cuda 11.0` toolkit, then head over to the [pytorch website](https://pytorch.org/get-started/previous-versions/) and find an appropriate command for installing the version of `pytorch` indicated in `baselines_environment.lock.yml` with a cuda version that runs for your hardware. For example for `cuda 10.2` use:
+   ```
+   pip install torch==1.7.1 torchvision==0.8.2 torchaudio==0.7.2
+   ```
+   
 ### Generating dialogues through agent-agent interaction
 
 To generate dialogues, first change working directory to the `baselines` directory. Run the command
@@ -56,7 +72,8 @@ The conversion is done according to the `schema.json` file in the `baselines` di
 
 ## Installation
 
-The recommended way to use this repository is to develop the core code under `src/crazyneuraluser`. The experiments/exporatory analysis making use of the core package code should be placed outside the library and imported. See more guidance under the [Project Organisation](#project-organization) section below.
+The recommended way to use this repository is to develop the core code under `src/crazyneuraluser`. The experiments/exporatory analysis making use of the core 
+package code should be placed outside the library and import it. See more guidance under the [Project Organisation](#project-organization) section below.
 
 To create an environment for the package, make sure you have deactivated all `conda` environments. Then:
 
