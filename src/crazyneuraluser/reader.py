@@ -474,7 +474,7 @@ class MultiWozReader(_ReaderBase):
                 # encoded: no sos, se_encoded: sos and eos
                 # db: add db results every turn
             else:
-                xdomain_dir = './experiments_Xdomain/data'
+                xdomain_dir = './models/experiments_Xdomain/data'
                 if not os.path.exists(xdomain_dir):
                     os.makedirs(xdomain_dir)
                 encoded_file = os.path.join(xdomain_dir, '{}-encoded.data.json'.format('-'.join(cfg.exp_domains))) 

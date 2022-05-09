@@ -1,6 +1,6 @@
 import json,  os, re, copy, zipfile
 import spacy
-import ontology, utils
+from crazyneuraluser import ontology, utils
 from collections import OrderedDict
 from tqdm import tqdm
 from crazyneuraluser.config import global_config as cfg
@@ -74,7 +74,7 @@ def get_db_values(value_set_path): # value_set.json, all the domain[slot] values
 
     with open(value_set_path.replace('.json', '_processed.json'), 'w') as f:
         json.dump(processed, f, indent=2) # save processed.json 
-    with open('data/multi-woz-processed/bspn_word_collection.json', 'w') as f:
+    with open('data/preprocessed/multi-woz-processed/bspn_word_collection.json', 'w') as f:
         json.dump(bspn_word, f, indent=2) # save bspn_word
 
     print('DB value set processed! ')
@@ -112,10 +112,10 @@ class DataPreprocessor(object):
         # self.delex_mt_valdict_path = 'data/multi-woz-processed/delex_multi_valdict.json'
         # self.ambiguous_val_path = 'data/multi-woz-processed/ambiguous_values.json'
         # self.delex_refs_path = 'data/multi-woz-processed/reference_no.json'
-        self.delex_sg_valdict_path = 'data/multi-woz-2.1-processed/delex_single_valdict.json'
-        self.delex_mt_valdict_path = 'data/multi-woz-2.1-processed/delex_multi_valdict.json'
-        self.ambiguous_val_path = 'data/multi-woz-2.1-processed/ambiguous_values.json'
-        self.delex_refs_path = 'data/multi-woz-2.1-processed/reference_no.json'
+        self.delex_sg_valdict_path = 'data/preprocessed/multi-woz-2.1-processed/delex_single_valdict.json'
+        self.delex_mt_valdict_path = 'data/preprocessed/multi-woz-2.1-processed/delex_multi_valdict.json'
+        self.ambiguous_val_path = 'data/preprocessed/multi-woz-2.1-processed/ambiguous_values.json'
+        self.delex_refs_path = 'data/preprocessed/multi-woz-2.1-processed/reference_no.json'
         self.delex_refs = json.loads(open(self.delex_refs_path, 'r').read())
         if not os.path.exists(self.delex_sg_valdict_path):
             self.delex_sg_valdict, self.delex_mt_valdict, self.ambiguous_vals = self.get_delex_valdict()
@@ -478,32 +478,32 @@ class DataPreprocessor(object):
             # if count == 20:
             #     break
         self.vocab.construct()
-        self.vocab.save_vocab('data/multi-woz-2.1-processed/vocab')
-        with open('data/multi-woz-2.1-analysis/dialog_acts.json', 'w') as f:
+        self.vocab.save_vocab('data/preprocessed/multi-woz-2.1-processed/vocab')
+        with open('data/interim/multi-woz-2.1-analysis/dialog_acts.json', 'w') as f:
             json.dump(ordered_sysact_dict, f, indent=2)
-        with open('data/multi-woz-2.1-analysis/dialog_act_type.json', 'w') as f:
+        with open('data/interim/multi-woz-2.1-analysis/dialog_act_type.json', 'w') as f:
             json.dump(self.unique_da, f, indent=2)
         return data
 
 
 if __name__=='__main__':
     db_paths = {
-            'attraction': 'db/attraction_db.json',
-            'hospital': 'db/hospital_db.json',
-            'hotel': 'db/hotel_db.json',
-            'police': 'db/police_db.json',
-            'restaurant': 'db/restaurant_db.json',
-            'taxi': 'db/taxi_db.json',
-            'train': 'db/train_db.json',
+            'attraction': 'db/raw/attraction_db.json',
+            'hospital': 'db/raw/hospital_db.json',
+            'hotel': 'db/raw/hotel_db.json',
+            'police': 'db/raw/police_db.json',
+            'restaurant': 'db/raw/restaurant_db.json',
+            'taxi': 'db/raw/taxi_db.json',
+            'train': 'db/raw/train_db.json',
         }
     # get_db_values('db/value_set.json') # 
     # preprocess_db(db_paths)
-    if not os.path.exists('data/multi-woz-2.1-processed'):
-        os.mkdir('data/multi-woz-2.1-processed')
+    if not os.path.exists('data/preprocessed/multi-woz-2.1-processed'):
+        os.mkdir('data/preprocessed/multi-woz-2.1-processed')
     dh = DataPreprocessor()
     data = dh.preprocess_main()
     
 
-    with open('data/multi-woz-2.1-processed/data_for_damd.json', 'w') as f:
+    with open('data/preprocessed/multi-woz-2.1-processed/data_for_ubar.json', 'w') as f:
         json.dump(data, f, indent=2)
 

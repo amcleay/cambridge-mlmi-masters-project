@@ -4,13 +4,13 @@ from crazyneuraluser.ontology import all_domains
 
 
 # 2.0
-data_path = 'data/multi-woz/'
-save_path = 'data/multi-woz-analysis/'
-save_path_exp = 'data/multi-woz-processed/'
+data_path = 'data/raw/multi-woz/'
+save_path = 'data/interim/multi-woz-analysis/'
+save_path_exp = 'data/preprocessed/multi-woz-processed/'
 # 2.1
-# data_path = 'data/MultiWOZ_2.1/'
-# save_path = 'data/multi-woz-2.1-analysis/'
-# save_path_exp = 'data/multi-woz-2.1-processed/'
+# data_path = 'data/raw/MultiWOZ_2.1/'
+# save_path = 'data/interim/multi-woz-2.1-analysis/'
+# save_path_exp = 'data/preprocessed/multi-woz-2.1-processed/'
 data_file = 'data.json'
 domains = all_domains
 # all_domains = ['restaurant', 'hotel', 'attraction', 'train', 'taxi', 'police', 'hospital']

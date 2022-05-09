@@ -1,10 +1,7 @@
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPT2Model
 from crazyneuraluser.eval import MultiWozEvaluator
-from crazyneuraluser.damd_net import DAMD, cuda_, get_one_hot_input
 from crazyneuraluser.reader import MultiWozReader
-from crazyneuraluser import utils
-from torch.optim import Adam
 import torch
 import torch.nn as nn
 
@@ -14,7 +11,6 @@ import argparse
 import time
 import logging
 import json
-import tqdm
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -28,7 +24,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class Modal(object):
+class Model(object):
     def __init__(self, device):
         self.device = device
         # initialize tokenizer
@@ -733,11 +729,11 @@ def parse_arg_cfg(args):
 
 
 def main():
-    if not os.path.exists('./experiments'):
-        os.mkdir('./experiments')
+    if not os.path.exists('./models/experiments'):
+        os.mkdir('./models/experiments')
 
-    if not os.path.exists('./experiments_21'):
-        os.mkdir('./experiments_21')
+    if not os.path.exists('./models/experiments_21'):
+        os.mkdir('./models/experiments_21')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-mode')
@@ -757,7 +753,7 @@ def main():
             #                                                                     cfg.exp_no, cfg.seed, cfg.lr, cfg.batch_size,
             #                                                                     cfg.early_stop_count, cfg.weight_decay_count)
 
-            experiments_path = './experiments' if 'all' in cfg.exp_domains else './experiments_Xdomain'
+            experiments_path = './models/experiments' if 'all' in cfg.exp_domains else './models/experiments_Xdomain'
             cfg.exp_path = os.path.join(experiments_path, '{}_{}_sd{}_lr{}_bs{}_ga{}'.format('-'.join(cfg.exp_domains),
                                                                                              cfg.exp_no, cfg.seed, cfg.lr, cfg.batch_size,
                                                                                              cfg.gradient_accumulation_steps))
@@ -791,7 +787,7 @@ def main():
     np.random.seed(cfg.seed)
 
     # initialize model
-    m = Modal(device)
+    m = Model(device)
 
     if args.mode == 'train':    # train
         if cfg.save_log:  # save cfg details.

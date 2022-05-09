@@ -2,30 +2,30 @@ import logging, time, os
 
 class _Config:
     def __init__(self):
-        self._multiwoz_damd_init()
+        self._multiwoz_ubar_init()
 
-    def _multiwoz_damd_init(self):
+    def _multiwoz_ubar_init(self):
         self.gpt_path = 'distilgpt2'
 
-        self.vocab_path_train = './data/multi-woz-processed/vocab'
+        self.vocab_path_train = './data/preprocessed/multi-woz-processed/vocab'
         self.vocab_path_eval = None
-        self.data_path = './data/multi-woz-processed/'
-        self.data_file = 'data_for_damd.json'
-        self.dev_list = 'data/multi-woz/valListFile.json'
-        self.test_list = 'data/multi-woz/testListFile.json'
+        self.data_path = './data/preprocessed/multi-woz-processed/'
+        self.data_file = 'data_for_ubar.json'
+        self.dev_list = 'data/raw/multi-woz/valListFile.json'
+        self.test_list = 'data/raw/multi-woz/testListFile.json'
         self.dbs = {
-            'attraction': 'db/attraction_db_processed.json',
-            'hospital': 'db/hospital_db_processed.json',
-            'hotel': 'db/hotel_db_processed.json',
-            'police': 'db/police_db_processed.json',
-            'restaurant': 'db/restaurant_db_processed.json',
-            'taxi': 'db/taxi_db_processed.json',
-            'train': 'db/train_db_processed.json',
+            'attraction': 'data/preprocessed/db_processed/attraction_db_processed.json',
+            'hospital': 'data/preprocessed/db_processed/hospital_db_processed.json',
+            'hotel': 'data/preprocessed/db_processed/hotel_db_processed.json',
+            'police': 'data/preprocessed/db_processed/police_db_processed.json',
+            'restaurant': 'data/preprocessed/db_processed/restaurant_db_processed.json',
+            'taxi': 'data/preprocessed/db_processed/taxi_db_processed.json',
+            'train': 'data/preprocessed/db_processed/train_db_processed.json',
         }
         self.glove_path = './data/glove/glove.6B.50d.txt'
-        self.domain_file_path = 'data/multi-woz-processed/domain_files.json'
-        self.slot_value_set_path = 'db/value_set_processed.json'
-        self.multi_acts_path = 'data/multi-woz-processed/multi_act_mapping_train.json'
+        self.domain_file_path = 'data/preprocessed/multi-woz-processed/domain_files.json'
+        self.slot_value_set_path = 'data/preprocessed/db_processed/value_set_processed.json'
+        self.multi_acts_path = 'data/preprocessed/multi-woz-processed/multi_act_mapping_train.json'
         self.exp_path = 'to be generated'
         self.log_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
@@ -36,7 +36,7 @@ class _Config:
         self.exp_no = ''
         self.seed = 11
         self.save_log = True # tensorboard 
-        self.evaluate_during_training = False # evaluate during training
+        self.evaluate_during_training = True # evaluate during training
         self.report_interval = 200 # 485 for bs 128
         self.max_nl_length = 60
         self.max_span_length = 30
@@ -60,7 +60,7 @@ class _Config:
         self.valid_loss = 'score'
 
         # evaluation settings
-        self.eval_load_path = 'experiments/all_0729_sd11_lr0.0001_bs2_ga16/epoch43_trloss0.56_gpt2'
+        self.eval_load_path = 'models/experiments/all_0729_sd11_lr0.0001_bs2_ga16/epoch43_trloss0.56_gpt2'
         self.model_output = 'model_output_e2e_FFFT_fix_bs.json'
         self.eval_per_domain = False
 

@@ -4,8 +4,8 @@ import re
 import copy
 import zipfile
 import spacy
-import ontology
-import utils
+from crazyneuraluser import ontology
+from crazyneuraluser import utils
 from collections import OrderedDict
 from tqdm import tqdm
 from crazyneuraluser.config import global_config as cfg
@@ -22,7 +22,7 @@ def get_db_values(value_set_path):
     with open(value_set_path, 'r') as f:  # read value set file in lower
         value_set = json.loads(f.read().lower())
 
-    with open('db/ontology.json', 'r') as f:  # read ontology in lower, all the domain-slot values
+    with open('data/raw/db/ontology.json', 'r') as f:  # read ontology in lower, all the domain-slot values
         otlg = json.loads(f.read().lower())
 
     for domain, slots in value_set.items():  # add all informable slots to bspn_word, create lists holder for values
@@ -81,7 +81,7 @@ def get_db_values(value_set_path):
 
     with open(value_set_path.replace('.json', '_processed.json'), 'w') as f:
         json.dump(processed, f, indent=2)  # save processed.json
-    with open('data/multi-woz-processed/bspn_word_collection.json', 'w') as f:
+    with open('data/processed/multi-woz-processed/bspn_word_collection.json', 'w') as f:
         json.dump(bspn_word, f, indent=2)  # save bspn_word
 
     print('DB value set processed! ')
@@ -114,14 +114,14 @@ class DataPreprocessor(object):
     def __init__(self):
         self.nlp = spacy.load('en_core_web_sm')
         self.db = MultiWozDB(cfg.dbs)  # load all processed dbs
-        data_path = 'data/multi-woz/annotated_user_da_with_span_full.json'
+        data_path = 'data/raw/multi-woz/annotated_user_da_with_span_full.json'
         archive = zipfile.ZipFile(data_path + '.zip', 'r')
         self.convlab_data = json.loads(archive.open(
             data_path.split('/')[-1], 'r').read().lower())
-        self.delex_sg_valdict_path = 'data/multi-woz-processed/delex_single_valdict.json'
-        self.delex_mt_valdict_path = 'data/multi-woz-processed/delex_multi_valdict.json'
-        self.ambiguous_val_path = 'data/multi-woz-processed/ambiguous_values.json'
-        self.delex_refs_path = 'data/multi-woz-processed/reference_no.json'
+        self.delex_sg_valdict_path = 'data/processed/multi-woz-processed/delex_single_valdict.json'
+        self.delex_mt_valdict_path = 'data/processed/multi-woz-processed/delex_multi_valdict.json'
+        self.ambiguous_val_path = 'data/processed/multi-woz-processed/ambiguous_values.json'
+        self.delex_refs_path = 'data/processed/multi-woz-processed/reference_no.json'
         self.delex_refs = json.loads(open(self.delex_refs_path, 'r').read())
         if not os.path.exists(self.delex_sg_valdict_path):
             self.delex_sg_valdict, self.delex_mt_valdict, self.ambiguous_vals = self.get_delex_valdict()
@@ -494,30 +494,30 @@ class DataPreprocessor(object):
             # if count == 20:
             #     break
         self.vocab.construct()
-        self.vocab.save_vocab('data/multi-woz-processed/vocab')
-        with open('data/multi-woz-analysis/dialog_acts.json', 'w') as f:
+        self.vocab.save_vocab('data/processed/multi-woz-processed/vocab')
+        with open('data/interim/multi-woz-analysis/dialog_acts.json', 'w') as f:
             json.dump(ordered_sysact_dict, f, indent=2)
-        with open('data/multi-woz-analysis/dialog_act_type.json', 'w') as f:
+        with open('data/interim/multi-woz-analysis/dialog_act_type.json', 'w') as f:
             json.dump(self.unique_da, f, indent=2)
         return data
 
 
 if __name__ == '__main__':
     db_paths = {
-        'attraction': 'db/attraction_db.json',
-        'hospital': 'db/hospital_db.json',
-        'hotel': 'db/hotel_db.json',
-        'police': 'db/police_db.json',
-        'restaurant': 'db/restaurant_db.json',
-        'taxi': 'db/taxi_db.json',
-        'train': 'db/train_db.json',
+        'attraction': 'data/raw/db/attraction_db.json',
+        'hospital': 'data/raw/db/hospital_db.json',
+        'hotel': 'data/raw/db/hotel_db.json',
+        'police': 'data/raw/db/police_db.json',
+        'restaurant': 'data/raw/db/restaurant_db.json',
+        'taxi': 'data/raw/db/taxi_db.json',
+        'train': 'data/raw/db/train_db.json',
     }
-    get_db_values('db/value_set.json')
+    get_db_values('data/raw/db/value_set.json')
     preprocess_db(db_paths)
     dh = DataPreprocessor()
     data = dh.preprocess_main()
-    if not os.path.exists('data/multi-woz-processed'):
-        os.mkdir('data/multi-woz-processed')
+    if not os.path.exists('data/processed/multi-woz-processed'):
+        os.mkdir('data/processed/multi-woz-processed')
 
-    with open('data/multi-woz-processed/data_for_damd.json', 'w') as f:
+    with open('data/processed/multi-woz-processed/data_for_ubar.json', 'w') as f:
         json.dump(data, f, indent=2)

@@ -1,6 +1,5 @@
 import logging
 import json
-import torch
 import numpy as np
 from collections import OrderedDict
 from crazyneuraluser import ontology
@@ -159,10 +158,6 @@ def padSeqs_gpt(sequences, pad_id, maxlen=None):
         x[idx, :len(trunc)] = trunc
             
     return x, lengths
-
-
-    
-        
 
 
 def padSeqs(sequences, maxlen=None, truncated = False, pad_method='post',
