@@ -55,3 +55,4 @@ MANIFEST
 # Logging
 /log
 /wandb
+/logs_test
