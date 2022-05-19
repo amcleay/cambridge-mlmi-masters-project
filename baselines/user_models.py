@@ -26,3 +26,7 @@ def baseline_usr_model() -> Tuple[convlab2.dialog_agent.PipelineAgent, dict]:
         "model_code": "usr_baseline",
     }
     return user_agent, metadata
+
+
+def gpt2_user_model():
+    return None

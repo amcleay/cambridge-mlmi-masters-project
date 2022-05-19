@@ -188,3 +188,7 @@ def corpus_system_model():
         "model_code": "sys_corpus",
     }
     return sys_agent, metadata
+
+
+def UBAR_sys_model():
+    return None

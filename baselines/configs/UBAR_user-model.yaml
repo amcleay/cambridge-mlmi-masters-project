@@ -1,0 +1,94 @@
+agents:
+  # function called to generate the user agent. Must be implemented
+  # in user_models.py
+  user:
+    name: gpt2_user_model
+    # specify here the arguments to your function, if any
+    args: []
+    # specify here the kwargs to your function, if any
+    kwargs: {}
+  # function called to generate the system agent. Must be implemented
+  # in system_models.py
+    is_convlab2: False
+  system:
+    name: UBAR_sys_model
+    # specify here the arguments to your function, if any
+    args: []
+    # specify here the kwargs to your function, if any
+    kwargs: {}
+    is_convlab2: False
+
+generation:
+  # maximum number of turns for each dialogue
+  max_turns: 30
+  # number of dialogues to generate. Ignored if predefined goals are input.
+  n_dialogues: 10
+  # How many dialogues per file
+  num_dials_per_file: 32
+  # Use to save the content of the state property of the user/system agent DST at every turn
+  save_dst_state: False
+  # true: apply the cleaning operations implemented in utils.CorpusGoalGenerator.clean_goal
+  #  to the original goal and standardise goal:
+
+  # When booking calls fail, the MultiWOZ goal format provides `fail_book`
+  # fields such that the user can achieve their goal. The slot-value pairs
+  # are duplicated across info/fail_info but not book/fail_book. The evaluation protocol allows for
+  # two repetitions of the same constraint information in case there is a failure, without penalising
+  # the user. To ensure the evaluation consistency for `info` and `book` subdomains, the slot value pairs in the
+  # `book` constraint are copied to the `fail_book` constraints set. Example:
+  #  1. Raw goal on restaurant domain (unchanged if standardise=false):
+  #     {'fail_book': {'time': 19:30} , 'book': {'time': 19:00, 'day': Thursday, 'people': 5}}
+  #  2. Post-processed goal (standardise=true)
+  #     {'fail_book': {'time': 19:30, 'day': Thursday, 'people': 5} ,
+  #     {'book': {'time': 19:00, 'day': Thursday, 'people': 5}}
+  # If 2. is used and the user informs `people` or `day` twice, they will not be penalised during evaluation.
+  #
+  # Must be `true` if using corpus goals with convlab2 model to ensure convlab2 models get a similar format to the
+  # goals generated internally by convlab2.
+  standardise_goals: true
+  # whether to use sampled goals or goals from the corpus/specified by hand
+  goal_settings:
+    # true: goals sampled according to the convlab-2 goal model
+    # false: goals should be provided in a mapping, with absolute path specified in `goals_path`, via CLI
+    # (for MultiWOZ 2.1 this can be the actual corpus).
+    #  The mapping should be a single .json file containing a mapping of the form
+    #              {
+    #                'dialogue_id': {
+    #                   'goal': {
+    #                             'domain': dict, domain_dict,
+    #                              ...,
+    #                             'message': list[str], a message that can be used to establish domain ordering
+    #                           },
+    #              }
+    #  Where each domain_dict has the form
+    #             {
+    #                 'info': {slot[str]:value[str], ...}, constraints that yield DB result
+    #                 'fail_info': {slot[str]:value[str], ...}, constraints for which there are no results
+    #                 'book': {slot[str]:value[str], ...}, (for booking domains only), successful booking constraints
+    #                 'fail_book': {slot[str]:value[str], ...}, unsuccessful booking constraints
+    #                 'reqt' list[str], of slots the user will request
+    #            }
+    # Empty fields will be treated according to `clean_goal` setting.
+    #
+    # The `message` should be, at a minimum, a list with the order in which domains are discussed during the dialogue,
+    # and is used by some convlab-2 models. convlab-2 infers this order from the message by looking for specific domain
+    # key words in each entry in message, and stopping at the first index a key word is found for each domain. The
+    # domain names are then ordered according to the indices. This results in a noisy domain ordering as the messages
+    # are often inaccurate.
+    random: true
+
+logging:
+  # true: prints the dialogues as they are generated
+  verbose: false
+  # print message after this number of dialogues have been simulated
+  generation_progress_print_freq: 1
+  # A prefix name to be prepended to the default output folder name
+  prefix: ''
+
+# set random number seeds to ensure deterministic behaviour across runs (see utils.ensure_determinism)
+rng_settings:
+  seed: 112
+  cudnn:
+    enabled: false
+    deterministic: true
+    benchmark: false
