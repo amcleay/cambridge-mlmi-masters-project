@@ -5,9 +5,9 @@ from collections import Counter, OrderedDict
 
 from nltk.util import ngrams
 
-from crazyneuraluser import ontology
-from crazyneuraluser.clean_dataset import clean_slot_values
-from crazyneuraluser.config import global_config as cfg
+from crazyneuraluser.UBAR_code import ontology
+from crazyneuraluser.UBAR_code.clean_dataset import clean_slot_values
+from crazyneuraluser.UBAR_code.config import global_config as cfg
 
 
 class BLEUScorer(object):

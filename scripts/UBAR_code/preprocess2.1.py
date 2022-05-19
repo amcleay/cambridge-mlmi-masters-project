@@ -8,10 +8,10 @@ from collections import OrderedDict
 import spacy
 from tqdm import tqdm
 
-from crazyneuraluser import ontology, utils
-from crazyneuraluser.clean_dataset import clean_slot_values, clean_text
-from crazyneuraluser.config import global_config as cfg
-from crazyneuraluser.db_ops import MultiWozDB
+from crazyneuraluser.UBAR_code import ontology, utils
+from crazyneuraluser.UBAR_code.clean_dataset import clean_slot_values, clean_text
+from crazyneuraluser.UBAR_code.config import global_config as cfg
+from crazyneuraluser.UBAR_code.db_ops import MultiWozDB
 
 
 def get_db_values(
@@ -95,7 +95,7 @@ def get_db_values(
     with open(value_set_path.replace(".json", "_processed.json"), "w") as f:
         json.dump(processed, f, indent=2)  # save processed.json
     with open(
-        "data/preprocessed/multi-woz-processed/bspn_word_collection.json", "w"
+        "data/preprocessed/UBAR/multi-woz-processed/bspn_word_collection.json", "w"
     ) as f:
         json.dump(bspn_word, f, indent=2)  # save bspn_word
 
@@ -133,7 +133,7 @@ class DataPreprocessor(object):
         self.nlp = spacy.load("en_core_web_sm")
         self.db = MultiWozDB(cfg.dbs)  # load all processed dbs
         # data_path = 'data/multi-woz/annotated_user_da_with_span_full.json'
-        data_path = "data/raw/MultiWOZ_2.1/data.json"
+        data_path = "data/raw/UBAR/MultiWOZ_2.1/data.json"
         archive = zipfile.ZipFile(data_path + ".zip", "r")
         self.convlab_data = json.loads(
             archive.open(data_path.split("/")[-1], "r").read().lower()
@@ -143,16 +143,16 @@ class DataPreprocessor(object):
         # self.ambiguous_val_path = 'data/multi-woz-processed/ambiguous_values.json'
         # self.delex_refs_path = 'data/multi-woz-processed/reference_no.json'
         self.delex_sg_valdict_path = (
-            "data/preprocessed/multi-woz-2.1-processed/delex_single_valdict.json"
+            "data/preprocessed/UBAR/multi-woz-2.1-processed/delex_single_valdict.json"
         )
         self.delex_mt_valdict_path = (
-            "data/preprocessed/multi-woz-2.1-processed/delex_multi_valdict.json"
+            "data/preprocessed/UBAR/multi-woz-2.1-processed/delex_multi_valdict.json"
         )
         self.ambiguous_val_path = (
-            "data/preprocessed/multi-woz-2.1-processed/ambiguous_values.json"
+            "data/preprocessed/UBAR/multi-woz-2.1-processed/ambiguous_values.json"
         )
         self.delex_refs_path = (
-            "data/preprocessed/multi-woz-2.1-processed/reference_no.json"
+            "data/preprocessed/UBAR/multi-woz-2.1-processed/reference_no.json"
         )
         self.delex_refs = json.loads(open(self.delex_refs_path, "r").read())
         if not os.path.exists(self.delex_sg_valdict_path):
@@ -647,7 +647,7 @@ class DataPreprocessor(object):
             # if count == 20:
             #     break
         self.vocab.construct()
-        self.vocab.save_vocab("data/preprocessed/multi-woz-2.1-processed/vocab")
+        self.vocab.save_vocab("data/preprocessed/UBAR/multi-woz-2.1-processed/vocab")
         with open("data/interim/multi-woz-2.1-analysis/dialog_acts.json", "w") as f:
             json.dump(ordered_sysact_dict, f, indent=2)
         with open("data/interim/multi-woz-2.1-analysis/dialog_act_type.json", "w") as f:
@@ -667,10 +667,12 @@ if __name__ == "__main__":
     }
     # get_db_values('db/value_set.json') #
     # preprocess_db(db_paths)
-    if not os.path.exists("data/preprocessed/multi-woz-2.1-processed"):
-        os.mkdir("data/preprocessed/multi-woz-2.1-processed")
+    if not os.path.exists("data/preprocessed/UBAR/multi-woz-2.1-processed"):
+        os.mkdir("data/preprocessed/UBAR/multi-woz-2.1-processed")
     dh = DataPreprocessor()
     data = dh.preprocess_main()
 
-    with open("data/preprocessed/multi-woz-2.1-processed/data_for_ubar.json", "w") as f:
+    with open(
+        "data/preprocessed/UBAR/multi-woz-2.1-processed/data_for_ubar.json", "w"
+    ) as f:
         json.dump(data, f, indent=2)

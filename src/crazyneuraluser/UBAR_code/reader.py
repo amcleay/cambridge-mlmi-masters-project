@@ -9,9 +9,9 @@ from copy import deepcopy
 import numpy as np
 import spacy
 
-from crazyneuraluser import ontology, utils
-from crazyneuraluser.config import global_config as cfg
-from crazyneuraluser.db_ops import MultiWozDB
+from crazyneuraluser.UBAR_code import ontology, utils
+from crazyneuraluser.UBAR_code.config import global_config as cfg
+from crazyneuraluser.UBAR_code.db_ops import MultiWozDB
 
 # from config21 import global_config as cfg
 
@@ -536,7 +536,7 @@ class MultiWozReader(_ReaderBase):
                 # encoded: no sos, se_encoded: sos and eos
                 # db: add db results every turn
             else:
-                xdomain_dir = "./models/experiments_Xdomain/data"
+                xdomain_dir = "./models/UBAR/experiments_Xdomain/data"
                 if not os.path.exists(xdomain_dir):
                     os.makedirs(xdomain_dir)
                 encoded_file = os.path.join(

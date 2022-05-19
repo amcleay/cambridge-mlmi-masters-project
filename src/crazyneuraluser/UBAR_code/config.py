@@ -10,30 +10,30 @@ class _Config:
     def _multiwoz_ubar_init(self):
         self.gpt_path = "distilgpt2"
 
-        self.vocab_path_train = "./data/preprocessed/multi-woz-processed/vocab"
+        self.vocab_path_train = "./data/preprocessed/UBAR/multi-woz-processed/vocab"
         self.vocab_path_eval = None
-        self.data_path = "./data/preprocessed/multi-woz-processed/"
+        self.data_path = "./data/preprocessed/UBAR/multi-woz-processed/"
         self.data_file = "data_for_ubar.json"
-        self.dev_list = "data/raw/multi-woz/valListFile.json"
-        self.test_list = "data/raw/multi-woz/testListFile.json"
+        self.dev_list = "data/raw/UBAR/multi-woz/valListFile.json"
+        self.test_list = "data/raw/UBAR/multi-woz/testListFile.json"
         self.dbs = {
-            "attraction": "data/preprocessed/db_processed/attraction_db_processed.json",
-            "hospital": "data/preprocessed/db_processed/hospital_db_processed.json",
-            "hotel": "data/preprocessed/db_processed/hotel_db_processed.json",
-            "police": "data/preprocessed/db_processed/police_db_processed.json",
-            "restaurant": "data/preprocessed/db_processed/restaurant_db_processed.json",
-            "taxi": "data/preprocessed/db_processed/taxi_db_processed.json",
-            "train": "data/preprocessed/db_processed/train_db_processed.json",
+            "attraction": "data/preprocessed/UBAR/db_processed/attraction_db_processed.json",
+            "hospital": "data/preprocessed/UBAR/db_processed/hospital_db_processed.json",
+            "hotel": "data/preprocessed/UBAR/db_processed/hotel_db_processed.json",
+            "police": "data/preprocessed/UBAR/db_processed/police_db_processed.json",
+            "restaurant": "data/preprocessed/UBAR/db_processed/restaurant_db_processed.json",
+            "taxi": "data/preprocessed/UBAR/db_processed/taxi_db_processed.json",
+            "train": "data/preprocessed/UBAR/db_processed/train_db_processed.json",
         }
         self.glove_path = "./data/glove/glove.6B.50d.txt"
         self.domain_file_path = (
-            "data/preprocessed/multi-woz-processed/domain_files.json"
+            "data/preprocessed/UBAR/multi-woz-processed/domain_files.json"
         )
         self.slot_value_set_path = (
-            "data/preprocessed/db_processed/value_set_processed.json"
+            "data/preprocessed/UBAR/db_processed/value_set_processed.json"
         )
         self.multi_acts_path = (
-            "data/preprocessed/multi-woz-processed/multi_act_mapping_train.json"
+            "data/preprocessed/UBAR/multi-woz-processed/multi_act_mapping_train.json"
         )
         self.exp_path = "to be generated"
         self.log_time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
@@ -71,9 +71,7 @@ class _Config:
         self.wandb_train_run_name = "Name to be added"
 
         # evaluation settings
-        self.eval_load_path = (
-            "models/experiments/all_0729_sd11_lr0.0001_bs2_ga16/epoch43_trloss0.56_gpt2"
-        )
+        self.eval_load_path = "models/UBAR/experiments/all_0729_sd11_lr0.0001_bs2_ga16/epoch43_trloss0.56_gpt2"
         self.model_output = "model_output_e2e_FFFT_fix_bs.json"
         self.eval_per_domain = False
         self.eval_set = "test"  # test, dev

@@ -15,9 +15,9 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 
 import wandb
-from crazyneuraluser.config import global_config as cfg
-from crazyneuraluser.eval import MultiWozEvaluator
-from crazyneuraluser.reader import MultiWozReader
+from crazyneuraluser.UBAR_code.config import global_config as cfg
+from crazyneuraluser.UBAR_code.eval import MultiWozEvaluator
+from crazyneuraluser.UBAR_code.reader import MultiWozReader
 
 # from config21 import global_config as cfg  # global, already initialized
 
@@ -643,11 +643,11 @@ def parse_arg_cfg(args):
 
 
 def main():
-    if not os.path.exists("./models/experiments"):
-        os.mkdir("./models/experiments")
+    if not os.path.exists("./models/UBAR/experiments"):
+        os.mkdir("./models/UBAR/experiments")
 
-    if not os.path.exists("./models/experiments_21"):
-        os.mkdir("./models/experiments_21")
+    if not os.path.exists("./models/UBAR/experiments_21"):
+        os.mkdir("./models/UBAR/experiments_21")
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-mode")
@@ -669,7 +669,7 @@ def main():
             # cfg.early_stop_count, cfg.weight_decay_count)
 
             experiments_path = (
-                "./models/experiments"
+                "./models/UBAR/experiments"
                 if "all" in cfg.exp_domains
                 else "./models/experiments_Xdomain"
             )
