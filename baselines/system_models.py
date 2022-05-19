@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple
 
-import convlab2.dialog_agent
+import convlab2.dialog_agent as dialog_agent
 from convlab2 import DST, Agent, BiSession, PipelineAgent
 from convlab2.dst.rule.multiwoz import RuleDST
 from convlab2.nlg.template.multiwoz import TemplateNLG
@@ -155,7 +155,7 @@ class BiSessionUserAct(BiSession):
         return sys_response, user_response, session_over, reward
 
 
-def baseline_sys_model() -> Tuple[convlab2.dialog_agent.PipelineAgent, dict]:
+def baseline_sys_model() -> Tuple[dialog_agent.PipelineAgent, dict]:
     # BERT nlu
     sys_nlu = BERTNLU()
     # simple rule DST
