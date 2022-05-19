@@ -636,8 +636,8 @@ def parse_arg_cfg(args):
                 v = v.split(",")
                 if k == "cuda_device":
                     v = [int(no) for no in v]
-            else:
-                v = type(dtype(v))
+            # else:
+            # v = type(dtype(v))
             setattr(cfg, k, v)
     return
 

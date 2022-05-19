@@ -1,23 +1,41 @@
-class UbarSystemModel:  # may inherit convlab or not, just like andy's
+import torch
+from omegaconf import OmegaConf
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-    def __init__(self, name: str, model_weights_path: str):
-        self.model = None  # load your model here - see Andy Code
-        self.tokenizer = None  # load your tokenizer here - see Andy Code
-        self.name = name
+from crazyneuraluser.UBAR_code.config import global_config as cfg
+
+
+class UbarSystemModel:  # may inherit convlab or not, just like andy's
+    def __init__(
+        self,
+        name: str,
+        model_weights_path: str,
+        model_config_path: str,
+        checkpoint_path: str,
+    ):
+
+        self.tokenizer = GPT2Tokenizer.from_pretrained(checkpoint_path)
+        self.model = GPT2LMHeadModel.from_pretrained(checkpoint_path)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.name = "UBAR_sys_model"
+
+        self.config = OmegaConf.load(model_config_path)
+
         # TODO: Need some properties that keep track of what happened in this interaction session
-        # TODO: Need to set device based on runtime - when you initialize you have specify device you running on
-        self.device = None
-        # TODO: THIS IS A LIST OF DICTS WHERE EACH DICT IS AS FOLLOWS: {'user': utterance, 'bs': list int with bs decoded, 'db': ..., 'act'}
+
+        # TODO: THIS IS A LIST OF DICTS WHERE EACH DICT IS AS FOLLOWS:
+        # {'user': utterance, 'bs': list int with bs decoded, 'db': ..., 'act'}
         self.context = []  # len(self.context) is nb of turns
+
         # TODO: You need to see how Model class above instatiates the reader so that you can query the DB
         #  NB: best to use corpus goals to guide interactions - baselines/simulate_agent.py allows that.
         self.reader = None
 
-    def prepare_input_for_model(self, context: list[str]) -> torch.Tensor:
+    def prepare_input_for_model(self, context: list(str)) -> torch.Tensor:
         # TODO: CONVERT DIALOGUE HISTORY TO TOKEN IDS
         raise NotImplementedError
 
-    def decode_generated_bspn(self, generated) -> List[int]:
+    def decode_generated_bspn(self, generated) -> list(int):
         eos_b_id = self.tokenizer.encode(["<eos_b>"])[0]
         if eos_b_id in generated:
             eos_b_idx = generated.index(eos_b_id)
@@ -53,16 +71,18 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
         else:  # predicted aspn, resp
             eos_a_idx = generated.index(eos_a_id)
             decoded["aspn"] = generated[: eos_a_idx + 1]
-            decoded["resp"] = generated[eos_a_idx + 1: eos_r_idx + 1]
+            decoded["resp"] = generated[eos_a_idx + 1 : eos_r_idx + 1]
         return decoded
 
     def response(self, usr_utterance: str) -> str:
 
-        self.context.append('[usr]')
+        self.context.append("[usr]")
         self.context.append(usr_utterance)
         # TODO: CONVERT CONTEXT SO THAT WE CAN CALL HUGGINGFACE .GENERATE METHOD TO GENERATE OUR SYSTEM RESONSE
         context_input_subseq = self.prepare_input_for_model(self.context)
         # TODO: FIND OUT BY COMPARING WITH MODEL.VALIDATE() how to calculate context_length
+        context_length = len(self.context)
+
         belief_state_ids = self.model.generate(
             input_ids=context_input_subseq,
             max_length=context_length + 60,
@@ -70,9 +90,11 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
             pad_token_id=self.tokenizer.eos_token_id,
             eos_token_id=self.tokenizer.encode(["<eos_b>"])[0],
         )
-        gen_belief_state_token_ids = belief_state_ids[0].cpu().numpy().tolist()  # type: list[int]
+        gen_belief_state_token_ids = (
+            belief_state_ids[0].cpu().numpy().tolist()
+        )  # type: list[int]
         belief_span_ids_subseq = self.decode_generated_bspn(
-            gen_belief_state_token_ids[context_length - 1:]
+            gen_belief_state_token_ids[context_length - 1 :]
         )  # type: list[int]
         # TODO: YOU NEED TO SOMEHOW KNOW FROM THE USER MODEL OR OTHERWISE WHAT IS THE DOMAIN!!!
         domain = None
@@ -80,13 +102,13 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
             self.tokenizer.decode(belief_span_ids_subseq), domain
         )  # type: str
         db_ids_subseq = self.tokenizer.convert_tokens_to_ids(
-            self.tokenizer.tokenize(
-                "<sos_db> " + db_result + " <eos_db>"
-            )
+            self.tokenizer.tokenize("<sos_db> " + db_result + " <eos_db>")
         ) + self.tokenizer.encode(["<sos_a>"])
 
-        # TODO: UNDERSTAND WHY THEY DID NOT TAKE THE LAST TOKEN IN MODEL.VALIDATE() AND MAKE SURE prepare_input_for_model
-        #  RETURNS THE CORRECT OUTPUT FOR THIS CALL
+        # TODO: UNDERSTAND WHY THEY DID NOT TAKE THE LAST TOKEN IN MODEL.VALIDATE()
+        # AND MAKE SURE prepare_input_for_model
+
+        # RETURNS THE CORRECT OUTPUT FOR THIS CALL
         act_response_gen_input_subseq = torch.tensor(
             [context_input_subseq + belief_span_ids_subseq + db_ids_subseq]
         ).to(self.device)
@@ -98,15 +120,22 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
             pad_token_id=self.tokenizer.eos_token_id,
             eos_token_id=self.tokenizer.encode(["<eos_r>"])[0],
         )
-        generated_act_resp_token_ids = outputs_db[0].cpu().numpy().tolist()  # type: list[int]
-        generated_act_resp_token_ids = generated_act_resp_token_ids[context_length - 1:]
+        generated_act_resp_token_ids = (
+            outputs_db[0].cpu().numpy().tolist()
+        )  # type: list[int]
+        generated_act_resp_token_ids = generated_act_resp_token_ids[
+            context_length - 1 :
+        ]
 
         try:
-            generated_subseq_ids_map = self.get_subseq_token_ids_map(generated_act_resp_token_ids)
+            generated_subseq_ids_map = self.get_subseq_token_ids_map(
+                generated_act_resp_token_ids
+            )
             # TODO: IF YOU WANT Option b) then you just read the ['resp'] key and convert to string using huggingface;
             #  that would be sys_response; Obviously, this applies to Option a as well
             generated_subseq_ids_map["bspn"] = belief_span_ids_subseq
-            # TODO: Option a) STORE THESE MAPPINGS IN SELF.CONTEXT IF YOU WANT TO HAVE {U_1, BS_1, DB_1, A_1, R_1, U_2, BS_2... history}
+            # TODO: Option a) STORE THESE MAPPINGS IN SELF.CONTEXT IF YOU WANT TO HAVE
+            # {U_1, BS_1, DB_1, A_1, R_1, U_2, BS_2... history}
         except ValueError:
             # NOTE: the below logging is commented out because when running evaluation
             # on early checkpoints of gpt2, the generated response is almost always
@@ -123,4 +152,4 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
         #   finally generate {A, R} and return R as a string to the user model
         #  The difference between the two is what you keen in self.context
 
-        return sys_response
+        return None  # sys_response

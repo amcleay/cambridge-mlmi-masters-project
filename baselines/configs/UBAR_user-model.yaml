@@ -9,14 +9,14 @@ agents:
     kwargs: {}
   # function called to generate the system agent. Must be implemented
   # in system_models.py
-    is_convlab2: True
+    is_convlab2: False
   system:
-    name: corpus_system_model
+    name: UBAR_sys_model
     # specify here the arguments to your function, if any
     args: []
     # specify here the kwargs to your function, if any
     kwargs: {}
-    is_convlab2: True
+    is_convlab2: False
 
 generation:
   # maximum number of turns for each dialogue
@@ -26,7 +26,7 @@ generation:
   # How many dialogues per file
   num_dials_per_file: 32
   # Use to save the content of the state property of the user/system agent DST at every turn
-  save_dst_state: true
+  save_dst_state: False
   # true: apply the cleaning operations implemented in utils.CorpusGoalGenerator.clean_goal
   #  to the original goal and standardise goal:
 
@@ -81,7 +81,7 @@ logging:
   # true: prints the dialogues as they are generated
   verbose: false
   # print message after this number of dialogues have been simulated
-  generation_progress_print_freq: 100
+  generation_progress_print_freq: 1
   # A prefix name to be prepended to the default output folder name
   prefix: ''
 

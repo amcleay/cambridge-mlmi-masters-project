@@ -1,13 +1,13 @@
 from typing import Tuple
 
-import convlab2.dialog_agent
+import convlab2.dialog_agent as dialog_agent
 from convlab2.dialog_agent import PipelineAgent
 from convlab2.nlg.template.multiwoz import TemplateNLG
 from convlab2.nlu.milu.multiwoz import MILU
 from convlab2.policy.rule.multiwoz import RulePolicy
 
 
-def baseline_usr_model() -> Tuple[convlab2.dialog_agent.PipelineAgent, dict]:
+def baseline_usr_model() -> Tuple[dialog_agent.PipelineAgent, dict]:
     user_nlu = MILU()
     # not use dst
     user_dst = None
@@ -26,3 +26,7 @@ def baseline_usr_model() -> Tuple[convlab2.dialog_agent.PipelineAgent, dict]:
         "model_code": "usr_baseline",
     }
     return user_agent, metadata
+
+
+def gpt2_user_model():
+    return None

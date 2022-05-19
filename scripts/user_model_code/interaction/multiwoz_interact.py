@@ -82,6 +82,8 @@ class NeuralAgent:  # crazyusermodel
         self.set_device()
         self.config = OmegaConf.load(model_config_path)
 
+        # name the model for
+
         # get schema, which is dependent to dataset, only for providing task description here
         self.service2meta, self.schema_intents, self.schema_slots = load_schema(
             self.config["schema_path"]
