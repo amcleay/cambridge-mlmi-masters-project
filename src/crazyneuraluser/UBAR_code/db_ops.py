@@ -2,7 +2,7 @@ import json
 import random
 import sqlite3
 
-from crazyneuraluser.ontology import all_domains, db_domains
+from crazyneuraluser.UBAR_code.ontology import all_domains, db_domains
 
 
 class MultiWozDB(object):

@@ -5,14 +5,14 @@ import re
 import zipfile
 from collections import OrderedDict
 
-from crazyneuraluser.ontology import all_domains
+from crazyneuraluser.UBAR_code.ontology import all_domains
 
 # 2.0
-data_path = "data/raw/multi-woz/"
+data_path = "data/raw/UBAR/multi-woz/"
 save_path = "data/interim/multi-woz-analysis/"
-save_path_exp = "data/preprocessed/multi-woz-processed/"
+save_path_exp = "data/preprocessed/UBAR/multi-woz-processed/"
 # 2.1
-# data_path = 'data/raw/MultiWOZ_2.1/'
+# data_path = 'data/raw/UBAR/MultiWOZ_2.1/'
 # save_path = 'data/interim/multi-woz-2.1-analysis/'
 # save_path_exp = 'data/preprocessed/multi-woz-2.1-processed/'
 data_file = "data.json"

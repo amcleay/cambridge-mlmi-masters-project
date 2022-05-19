@@ -56,3 +56,4 @@ MANIFEST
 /log
 /wandb
 /logs_test
+/models

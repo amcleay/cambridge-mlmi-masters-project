@@ -8,10 +8,10 @@ from collections import OrderedDict
 import spacy
 from tqdm import tqdm
 
-from crazyneuraluser import ontology, utils
-from crazyneuraluser.clean_dataset import clean_slot_values, clean_text
-from crazyneuraluser.config import global_config as cfg
-from crazyneuraluser.db_ops import MultiWozDB
+from crazyneuraluser.UBAR_code import ontology, utils
+from crazyneuraluser.UBAR_code.clean_dataset import clean_slot_values, clean_text
+from crazyneuraluser.UBAR_code.config import global_config as cfg
+from crazyneuraluser.UBAR_code.db_ops import MultiWozDB
 
 
 # value_set.json, all the domain[slot] values in datasets
@@ -24,7 +24,7 @@ def get_db_values(value_set_path):
         value_set = json.loads(f.read().lower())
 
     with open(
-        "data/raw/db/ontology.json", "r"
+        "data/raw/UBAR/db/ontology.json", "r"
     ) as f:  # read ontology in lower, all the domain-slot values
         otlg = json.loads(f.read().lower())
 
@@ -126,7 +126,7 @@ class DataPreprocessor(object):
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
         self.db = MultiWozDB(cfg.dbs)  # load all processed dbs
-        data_path = "data/raw/multi-woz/annotated_user_da_with_span_full.json"
+        data_path = "data/raw/UBAR/multi-woz/annotated_user_da_with_span_full.json"
         archive = zipfile.ZipFile(data_path + ".zip", "r")
         self.convlab_data = json.loads(
             archive.open(data_path.split("/")[-1], "r").read().lower()
@@ -623,15 +623,15 @@ class DataPreprocessor(object):
 
 if __name__ == "__main__":
     db_paths = {
-        "attraction": "data/raw/db/attraction_db.json",
-        "hospital": "data/raw/db/hospital_db.json",
-        "hotel": "data/raw/db/hotel_db.json",
-        "police": "data/raw/db/police_db.json",
-        "restaurant": "data/raw/db/restaurant_db.json",
-        "taxi": "data/raw/db/taxi_db.json",
-        "train": "data/raw/db/train_db.json",
+        "attraction": "data/raw/UBAR/db/attraction_db.json",
+        "hospital": "data/raw/UBAR/db/hospital_db.json",
+        "hotel": "data/raw/UBAR/db/hotel_db.json",
+        "police": "data/raw/UBAR/db/police_db.json",
+        "restaurant": "data/raw/UBAR/db/restaurant_db.json",
+        "taxi": "data/raw/UBAR/db/taxi_db.json",
+        "train": "data/raw/UBAR/db/train_db.json",
     }
-    get_db_values("data/raw/db/value_set.json")
+    get_db_values("data/raw/UBAR/db/value_set.json")
     preprocess_db(db_paths)
     dh = DataPreprocessor()
     data = dh.preprocess_main()
