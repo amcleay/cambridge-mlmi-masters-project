@@ -2,7 +2,6 @@ import copy
 import json
 import os
 import re
-import zipfile
 from collections import OrderedDict
 
 import spacy
@@ -92,7 +91,10 @@ def get_db_values(value_set_path):
 
     with open(value_set_path.replace(".json", "_processed.json"), "w") as f:
         json.dump(processed, f, indent=2)  # save processed.json
-    with open("data/processed/multi-woz-processed/bspn_word_collection.json", "w") as f:
+    with open(
+        "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/bspn_word_collection.json",
+        "w",
+    ) as f:
         json.dump(bspn_word, f, indent=2)  # save bspn_word
 
     print("DB value set processed! ")
@@ -126,21 +128,18 @@ class DataPreprocessor(object):
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
         self.db = MultiWozDB(cfg.dbs)  # load all processed dbs
-        data_path = "data/raw/UBAR/multi-woz/annotated_user_da_with_span_full.json"
-        archive = zipfile.ZipFile(data_path + ".zip", "r")
-        self.convlab_data = json.loads(
-            archive.open(data_path.split("/")[-1], "r").read().lower()
+        data_path = (
+            "data/preprocessed/UBAR/gen_usr_utt_experiment_data_with_span_full.json"
         )
-        self.delex_sg_valdict_path = (
-            "data/processed/multi-woz-processed/delex_single_valdict.json"
+        # archive = zipfile.ZipFile(data_path + ".zip", "r")
+        # self.convlab_data = json.loads(archive.open(data_path.split("/")[-1], "r").read().lower())
+        self.convlab_data = json.loads(open(data_path, "r").read().lower())
+        self.delex_sg_valdict_path = "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/delex_single_valdict.json"
+        self.delex_mt_valdict_path = "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/delex_multi_valdict.json"
+        self.ambiguous_val_path = "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/ambiguous_values.json"
+        self.delex_refs_path = (
+            "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/reference_no.json"
         )
-        self.delex_mt_valdict_path = (
-            "data/processed/multi-woz-processed/delex_multi_valdict.json"
-        )
-        self.ambiguous_val_path = (
-            "data/processed/multi-woz-processed/ambiguous_values.json"
-        )
-        self.delex_refs_path = "data/processed/multi-woz-processed/reference_no.json"
         self.delex_refs = json.loads(open(self.delex_refs_path, "r").read())
         if not os.path.exists(self.delex_sg_valdict_path):
             (
@@ -417,13 +416,17 @@ class DataPreprocessor(object):
                 if not dial_state:  # user
                     # delexicalize user utterance, either by annotation or by val_dict
                     u = " ".join(clean_text(dial_turn["text"]).split())
-                    if dial_turn["span_info"]:
-                        u_delex = clean_text(self.delex_by_annotation(dial_turn))
-                    else:
-                        u_delex = self.delex_by_valdict(dial_turn["text"])
+
+                    # NOTE: Commenting out delexicalisation because it is not used and
+                    # breaks when I use generated user dialogues for some reason
+
+                    # if dial_turn["span_info"]:
+                    #    u_delex = clean_text(self.delex_by_annotation(dial_turn))
+                    # else:
+                    #    u_delex = self.delex_by_valdict(dial_turn["text"])
 
                     single_turn["user"] = u
-                    single_turn["user_delex"] = u_delex
+                    # single_turn["user_delex"] = u_delex
 
                 else:  # system
                     # delexicalize system response, either by annotation or by val_dict
@@ -593,18 +596,15 @@ class DataPreprocessor(object):
                             + sys_act
                         ):
                             self.vocab.add_word(t)
-                        for t in single_turn["user_delex"].split():
-                            if (
-                                "[" in t
-                                and "]" in t
-                                and not t.startswith("[")
-                                and not t.endswith("]")
-                            ):
-                                single_turn["user_delex"].replace(
-                                    t, t[t.index("[") : t.index("]") + 1]
-                                )
-                            elif not self.vocab.has_word(t):
-                                self.vocab.add_word(t)
+
+                        # NOTE: Commenting out delexicalisation because it is not used and
+                        # breaks when I use generated user dialogues for some reason
+
+                        # for t in single_turn["user_delex"].split():
+                        #    if "[" in t and "]" in t and not t.startswith("[") and not t.endswith("]"):
+                        #        single_turn["user_delex"].replace(t, t[t.index("[") : t.index("]") + 1])
+                        #    elif not self.vocab.has_word(t):
+                        #        self.vocab.add_word(t)
 
                     single_turn = {}
 
@@ -613,10 +613,16 @@ class DataPreprocessor(object):
             # if count == 20:
             #     break
         self.vocab.construct()
-        self.vocab.save_vocab("data/processed/multi-woz-processed/vocab")
-        with open("data/interim/multi-woz-analysis/dialog_acts.json", "w") as f:
+        self.vocab.save_vocab(
+            "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/vocab"
+        )
+        with open(
+            "data/interim/gen_usr_utts/multi-woz-analysis/dialog_acts.json", "w"
+        ) as f:
             json.dump(ordered_sysact_dict, f, indent=2)
-        with open("data/interim/multi-woz-analysis/dialog_act_type.json", "w") as f:
+        with open(
+            "data/interim/gen_usr_utts/multi-woz-analysis/dialog_act_type.json", "w"
+        ) as f:
             json.dump(self.unique_da, f, indent=2)
         return data
 
@@ -635,8 +641,11 @@ if __name__ == "__main__":
     preprocess_db(db_paths)
     dh = DataPreprocessor()
     data = dh.preprocess_main()
-    if not os.path.exists("data/processed/multi-woz-processed"):
-        os.mkdir("data/processed/multi-woz-processed")
+    if not os.path.exists("data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed"):
+        os.mkdir("data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed")
 
-    with open("data/processed/multi-woz-processed/data_for_ubar.json", "w") as f:
+    with open(
+        "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/data_for_ubar.json",
+        "w",
+    ) as f:
         json.dump(data, f, indent=2)

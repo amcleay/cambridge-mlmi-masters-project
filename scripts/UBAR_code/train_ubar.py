@@ -367,7 +367,12 @@ class Model(object):
         btm = time.time()
         result_collection = {}
         with torch.no_grad():
+            # Adding this index to allow for quick testing of evaluation
+            dialogues_to_run = 1
             for dial_idx, dialog in tqdm(enumerate(eval_data)):
+                if dialogues_to_run == 0:
+                    break
+                dialogues_to_run -= 1
 
                 pv_turn = {}
                 for turn_idx, turn in enumerate(dialog):
@@ -627,17 +632,17 @@ def parse_arg_cfg(args):
     if args.cfg:
         for pair in args.cfg:
             k, v = tuple(pair.split("="))
-            dtype = getattr(cfg, k)
+            dtype = type(getattr(cfg, k))
             if isinstance(dtype, type(None)):
                 raise ValueError()
-            if isinstance(dtype, bool):
+            if dtype is bool:
                 v = False if v == "False" else True
-            elif isinstance(dtype, list):
+            elif dtype is list:
                 v = v.split(",")
                 if k == "cuda_device":
                     v = [int(no) for no in v]
-            # else:
-            # v = type(dtype(v))
+            else:
+                v = dtype(v)
             setattr(cfg, k, v)
     return
 
@@ -660,6 +665,7 @@ def main():
         # cfg.model_path = cfg.eval_load_path
         cfg.gpt_path = cfg.eval_load_path
     else:  # train
+
         parse_arg_cfg(args)
         if cfg.exp_path in ["", "to be generated"]:
             # log file path, control the factors: seed, learning_rate, batch_size,

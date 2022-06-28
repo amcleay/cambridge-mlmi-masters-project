@@ -1,14 +1,25 @@
 import copy
 import random
+import re
 import sys
+import traceback
 from typing import List
 
 import numpy as np
+import pandas as pd
 import torch
 import transformers
 from omegaconf import OmegaConf
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
-from utils import add_str, find_segment, load_schema, segment_gen, wrap_element
+
+from .utils import (
+    add_str,
+    bcolors,
+    find_segment,
+    load_schema,
+    segment_gen,
+    wrap_element,
+)
 
 
 class DummyPolicy:
@@ -82,7 +93,7 @@ class NeuralAgent:  # crazyusermodel
         self.set_device()
         self.config = OmegaConf.load(model_config_path)
 
-        # name the model for
+        self.print_intermediary_info = False
 
         # get schema, which is dependent to dataset, only for providing task description here
         self.service2meta, self.schema_intents, self.schema_slots = load_schema(
@@ -143,13 +154,22 @@ class NeuralAgent:  # crazyusermodel
         )
         self.bin_flags = {"true": "_True_", "false": "_False_"}
 
-        self.supported_services = ["train", "attraction", "hotel", "restaurant", "taxi"]
+        self.supported_services = [
+            "train",
+            "attraction",
+            "hotel",
+            "restaurant",
+            "taxi",
+            "police",
+            "hospital",
+        ]
 
         self.slot_types = {"search": "search", "book": "book"}
         # important to change the corresponding act str name when using different tokenization methods,
         # as they are used to control the user behaviours
         self.const_act_str = {
             "inform": "inform",
+            "recommend": "recommend",
             "request": "request",
             "fail_search": "no offer",
             "fail_book": "no book",
@@ -238,7 +258,8 @@ class NeuralAgent:  # crazyusermodel
             data[key] = value
 
         # update dynamic goal
-        print("SYS ACT ->", data["SYS_ACT"])
+        if self.print_intermediary_info:
+            print("SYS ACT ->", data["SYS_ACT"])
         goal = self.prepare_turn_goal(
             self._prev_usr_act, data["SYS_ACT"], data["SNT"], data["GC"], data["RA"]
         )
@@ -279,8 +300,9 @@ class NeuralAgent:  # crazyusermodel
             self.slot_types["book"]: 0,
             self.slot_types["search"]: 0,
         }  # record the max length of value list of a slot
-        for service in self.supported_services:
-            if service not in input_goal:
+
+        for service in input_goal["ordered_services"]:
+            if service not in self.supported_services:
                 continue
 
             # record intent list (scenario), order matters
@@ -305,6 +327,10 @@ class NeuralAgent:  # crazyusermodel
             if key in input_goal[service]:
                 for slot in input_goal[service][key].keys():
                     self._add_reqt(constraints[intent]["requestable"], slot)
+
+        # order intents by the order they are dealt with in the data so
+        # if using ground truth system responses the right order of the intents
+        # is preserved
 
         complete_goal = {"intents": intents, "constraints": constraints}
         return complete_goal
@@ -466,6 +492,7 @@ class NeuralAgent:  # crazyusermodel
         return False
 
     def _check_entity_provided(self, sys_act, intent):
+        # TODO:
         """Check if an entity provided in system response (act)"""
         assert intent in [
             "find restaurant",
@@ -473,6 +500,8 @@ class NeuralAgent:  # crazyusermodel
             "find attraction",
             "find train",
             "find taxi",
+            "find police",
+            "find hospital",
         ]
         if intent in ["find restaurant", "find hotel", "find attraction"]:
             if "<SLOT/> name </SLOT>" in sys_act:
@@ -493,6 +522,7 @@ class NeuralAgent:  # crazyusermodel
     ) -> str:
         """prepare the goal sequence for the current turn"""
         # TODO: more detailed instruction here
+        # TODO: Deal with empty intents (and figure out why they happen)
         intent = self.complete_goal["intents"][self.user_status["intent_idx"]]
 
         # TODO: check if at least one entity is provided in system act
@@ -558,7 +588,20 @@ class NeuralAgent:  # crazyusermodel
         intent_constraints = self.current_constraints[intent]
 
         if spk == "sys":
-            act_dict = self.parse_act(sys_act)
+            act_dict = self.parse_act(sys_act, self.print_intermediary_info)
+            # When the system provides information (in the act_dict) then remove it from the user's
+            # requestable constraints as the user has been provided with the info!
+            # NB: This was added by Alistair after the original code was shared by Andy,
+            # as it seems the original implementation missed this critical step.
+            if self.const_act_str["inform"] in act_dict:
+                for slot in act_dict[self.const_act_str["inform"]]:
+                    if slot in intent_constraints["requestable"]:
+                        intent_constraints["requestable"].remove(slot)
+            elif self.const_act_str["recommend"] in act_dict:
+                for slot in act_dict[self.const_act_str["recommend"]]:
+                    if slot in intent_constraints["requestable"]:
+                        intent_constraints["requestable"].remove(slot)
+
             # when the system informs failure (search or book), use next set of constraints given in goal #####
             # if "_NOTIFY_FAILURE_" in act_dict:
             if self.const_act_str["fail_search"] in act_dict:
@@ -616,7 +659,7 @@ class NeuralAgent:  # crazyusermodel
                     intent_constraints["informable"][slot] = value
 
         else:  # usr
-            act_dict = self.parse_act(usr_act)
+            act_dict = self.parse_act(usr_act, self.print_intermediary_info)
             # remove informed slot/value pair, if informed #
             if self.const_act_str["inform"] in act_dict:
                 for slot, value_list in act_dict[self.const_act_str["inform"]].items():
@@ -638,16 +681,20 @@ class NeuralAgent:  # crazyusermodel
                         ):
                             del intent_constraints["informable"][slot]
 
-            # remove requested slot, if requested #
+            # remove requested slot, if requested
             if self.const_act_str["request"] in act_dict:
-                sys_act_dict = self.parse_act(sys_act)  # auxiliary check
+                sys_act_dict = self.parse_act(
+                    sys_act, self.print_intermediary_info
+                )  # auxiliary check
                 for slot in act_dict[self.const_act_str["request"]].keys():
                     # if slot in intent_constraints["requestable"]: # one choice
-                    if (
-                        slot in intent_constraints["requestable"]
-                        and slot in sys_act_dict[self.const_act_str["inform"]].keys()
-                    ):  # another choice, more strict
-                        intent_constraints["requestable"].remove(slot)
+                    if self.const_act_str["inform"] in sys_act_dict:
+                        if (
+                            slot in intent_constraints["requestable"]
+                            and slot
+                            in sys_act_dict[self.const_act_str["inform"]].keys()
+                        ):  # another choice, more strict
+                            intent_constraints["requestable"].remove(slot)
 
     def _add_info(self, slot_to_value_list, slot, value) -> None:
         # print(slot)
@@ -674,7 +721,7 @@ class NeuralAgent:  # crazyusermodel
         pass
 
     @staticmethod
-    def parse_act(act_seq: str) -> dict:
+    def parse_act(act_seq: str, print_intermediary_info: bool) -> dict:
         """parse usr/sys act string into dict(act: {slot=value_list}) (slots in act_request have '_Empty_' value)"""
         act_dict = {}
         assert isinstance(act_seq, str)
@@ -700,23 +747,39 @@ class NeuralAgent:  # crazyusermodel
 
             assert act not in act_dict
             act_dict[act] = {}
+
+            # Sometimes the model bugs out and puts <ACT/> or </ACT> where there should be </VALUE> or <VALUE/>
+            if "ACT" in act_seg:
+                continue
+
             for sv_seg in act_seg.split("</VALUE>"):
                 if sv_seg == "":
                     continue
 
-                sv_seg = sv_seg.replace("<SLOT/>", "")
-                sv_seg = sv_seg.strip()  # remove spaces at begin and end
-                # 				print("|{}|".format(sv_seg))
-                slot, value = sv_seg.split("</SLOT> <VALUE/>")
-                slot, value = slot.strip(), value.strip()
-                # 				print("act: |{}|, slot: |{}|, value: |{}|".format(act, slot, value))
-                # one slot one value
-                # act_dict[act][slot] = value
-                # one slot, multi-value is possible by system
-                if slot not in act_dict[act]:
-                    act_dict[act][slot] = []
-                if value not in act_dict[act][slot]:
-                    act_dict[act][slot].append(value)
+                try:
+                    sv_seg = sv_seg.replace("<SLOT/>", "")
+                    sv_seg = sv_seg.strip()  # remove spaces at begin and end
+                    # 				print("|{}|".format(sv_seg))
+                    slot, value = sv_seg.split("</SLOT> <VALUE/>")
+                    slot, value = slot.strip(), value.strip()
+                    # 				print("act: |{}|, slot: |{}|, value: |{}|".format(act, slot, value))
+                    # one slot one value
+                    # act_dict[act][slot] = value
+                    # one slot, multi-value is possible by system
+                    if slot not in act_dict[act]:
+                        act_dict[act][slot] = []
+                    if value not in act_dict[act][slot]:
+                        act_dict[act][slot].append(value)
+
+                except Exception:
+                    if print_intermediary_info:
+                        print(
+                            bcolors.YELLOW
+                            + "!The User Agent got messed up the intermediate syntax! Exception:"
+                            + bcolors.ENDC
+                        )
+                        traceback.print_exc()
+                    continue
 
         # print(act_dict)
         return act_dict
@@ -786,7 +849,8 @@ class NeuralAgent:  # crazyusermodel
         # response = "I want Italian."
         gen_parse, gen_str = self.generate_whole_sequence(sys_utterance)
         self.update_internal_data(gen_parse)  # prepare for next turn
-        segment_gen(gen_str, "example dialogue")  # crazyusermodel
+        if self.print_intermediary_info:
+            segment_gen(gen_str, "example dialogue")  # crazyusermodel
         # TODO: update lists of context, da_in, da_out here
         return gen_parse["USR_UTT"]
 
@@ -841,9 +905,9 @@ def generate_example_goal() -> dict:
     # service_mate: {"info": {slot: value}, "fail_info": {slot: value},
     # 				"book": {slot}: value, "fail_book": {slot: value}, "reqt": set(slot)}
     goal = {}
-    # 	services = ["restaurant", "hotel"]
+    services = ["restaurant", "hotel"]
     # 	services = ["train", "attraction"]
-    services = ["restaurant"]
+    # services = ["restaurant"]
 
     # 	# restaurant
     service = services[0]
@@ -853,11 +917,7 @@ def generate_example_goal() -> dict:
         "area": "south",
         "price range": "expensive",
     }
-    goal[service]["info"] = {
-        "food": "chinese",
-        "area": "south",
-        "price range": "cheap",
-    }
+    goal[service]["info"] = {"food": "chinese", "area": "south", "price range": "cheap"}
     goal[service]["fail_book"] = {}
     goal[service]["book"] = {
         "book day": "monday",
@@ -866,32 +926,28 @@ def generate_example_goal() -> dict:
     }
     goal[service]["reqt"] = {"address": "?"}
 
-    # 	# hotel
-    # 	service = services[1]
-    # 	goal[service] = {}
-    # 	goal[service]["fail_info"] = {
-    # 		"stars": "3",
-    # 		"price range": "cheap",
-    # 		"area": "centre",
-    # 		"internet": "_True_"
-    # 	}
-    # 	goal[service]["info"] = {
-    # 		"stars": "5",
-    # 		"price range": "expensive",
-    # 		"area": "centre",
-    # 		"internet": "_True_"
-    # 	}
-    # 	goal[service]["fail_book"] = {
-    # 		"book day": "sunday",
-    # 		"book stay": 3,
-    # 		"book people": 2
-    # 	}
-    # 	goal[service]["book"] = {
-    # 		"book day": "monday",
-    # 		"book stay": 1,
-    # 		"book people": 2
-    # 	}
-    # 	goal[service]["reqt"] = {"phone": "?", "postcode": "?"}
+    # hotel
+    service = services[1]
+    goal[service] = {}
+    goal[service]["fail_info"] = {
+        "stars": "3",
+        "price range": "cheap",
+        "area": "centre",
+        "internet": "_True_",
+    }
+    goal[service]["info"] = {
+        "stars": "5",
+        "price range": "expensive",
+        "area": "centre",
+        "internet": "_True_",
+    }
+    goal[service]["fail_book"] = {
+        "book day": "sunday",
+        "book stay": 3,
+        "book people": 2,
+    }
+    goal[service]["book"] = {"book day": "monday", "book stay": 1, "book people": 2}
+    goal[service]["reqt"] = {"phone": "?", "postcode": "?"}
 
     # 	# train
     # 	service = services[1]
@@ -927,26 +983,168 @@ def generate_example_goal() -> dict:
     return goal
 
 
+def set_sorted_services_for_current_goal(goal, goal_idx, df_raw_mwoz):
+    # Get the list of services in the goal as they appear in the data so they can be processed correctly
+
+    current_dialogue_services = []
+    for service_name in goal:
+        current_dialogue_services.append(service_name)
+
+    message = df_raw_mwoz.iloc[:, goal_idx].goal["message"]
+
+    ordered_current_dialogue_services = []
+
+    for instruction in message:
+        instruction_split = re.split(" |<|>", instruction)
+        for word in instruction_split:
+            if word in current_dialogue_services:
+                ordered_current_dialogue_services.append(word)
+                current_dialogue_services.remove(word)
+
+    # Make sure any words not mentioned in the message (e.g. it happens for 'police' in the second goal) are n#ot missed
+    for word in current_dialogue_services:
+        if word not in ordered_current_dialogue_services:
+            ordered_current_dialogue_services.append(word)
+
+    return ordered_current_dialogue_services
+
+
+def read_multiWOZ_20_goals(file_path, n_goals):
+    df_raw_mwoz = pd.read_json(file_path)
+
+    goals = []
+    for i in range(n_goals):
+        parsed_goal = {}
+        goal = df_raw_mwoz.iloc[:, i].goal
+
+        # Determine relevant keys
+        for _ in goal.keys():
+            relevant_goals = {
+                k: v
+                for k, v in goal.items()
+                if v != {} and k != "topic" and k != "message"
+            }
+            services = [key for key in relevant_goals.keys()]
+            for service in services:
+                parsed_goal[service] = relevant_goals[service]
+
+        ordered_services = set_sorted_services_for_current_goal(
+            parsed_goal, i, df_raw_mwoz
+        )
+        parsed_goal["ordered_services"] = ordered_services
+
+        # Update the format of those relevant keys to match the format of this code
+        for service in parsed_goal.keys():
+            if service == "ordered_services":
+                continue
+
+            for service_key, service_value in parsed_goal[service].items():
+
+                # Handle 'reqt' key which is a list. Convert it to a dict. (and do the same for similar keys).
+                if (
+                    type(parsed_goal[service][service_key]) is list
+                    and parsed_goal[service][service_key] != []
+                ):
+                    replacement_dict = {}
+                    for item in parsed_goal[service][service_key]:
+                        replacement_dict[item] = "?"
+                    parsed_goal[service][service_key] = replacement_dict
+
+                # Handle 'hotel' key which has a string value
+                # with the name of hotel - or other similar situations
+                elif type(parsed_goal[service][service_key]) is str:
+                    continue
+
+                # Make sure the dictionary we are adding is not empty
+                if not parsed_goal[service][service_key]:
+                    continue
+
+                # Remove any attributes that are "invalid" or "preinvalid"
+                # Also check if 'arriveBy' or 'leaveAt' or 'pricerange' is inside the attributes of the service_key
+                # If so reformat it according to the code in this file
+
+                list_of_attribute_keys = [
+                    k for k in parsed_goal[service][service_key].keys()
+                ]
+                for k in list_of_attribute_keys:
+                    if k == "invalid" or k == "pre_invalid":
+                        parsed_goal[service][service_key].pop(k)
+                    if k == "arriveBy":
+                        parsed_goal[service][service_key]["arrive by"] = parsed_goal[
+                            service
+                        ][service_key].pop(k)
+                    elif k == "leaveAt":
+                        parsed_goal[service][service_key]["leave at"] = parsed_goal[
+                            service
+                        ][service_key].pop(k)
+                    elif k == "pricerange":
+                        parsed_goal[service][service_key]["price range"] = parsed_goal[
+                            service
+                        ][service_key].pop(k)
+                    elif k == "car type":
+                        parsed_goal[service][service_key]["type"] = parsed_goal[
+                            service
+                        ][service_key].pop(k)
+                    elif k == "trainID":
+                        parsed_goal[service][service_key]["train id"] = parsed_goal[
+                            service
+                        ][service_key].pop(k)
+
+                # Check if "book" is in the service info dict ("book" or "fail_book") then prepend
+                # 'book' to the keys inside the service (the attributes of the service)
+                if "book" in service_key:
+                    list_of_attribute_keys = [
+                        k for k in parsed_goal[service][service_key].keys()
+                    ]
+                    for k in list_of_attribute_keys:
+                        parsed_goal[service][service_key][
+                            "book {}".format(k)
+                        ] = parsed_goal[service][service_key].pop(k)
+
+                # If True or False is in service.values, convert to "_True_" or "_False_"
+                for k, v in parsed_goal[service][service_key].items():
+                    if v is True:
+                        parsed_goal[service][service_key][k] = "_True_"
+                    elif v is False:
+                        parsed_goal[service][service_key][k] = "_False_"
+
+        goals.append(parsed_goal)
+
+    return goals
+
+
 def interact(checkpoint_path):
     user_model = NeuralAgent(
         "user", checkpoint_path, "scripts/user_model_code/interaction/config.yaml"
     )
 
-    for dial_id in range(3):
-        print(f"In the dialogue {dial_id}")
-        goal = generate_example_goal()
-        user_model.init_session(ini_goal=goal)
-        sys_utt = ""
+    # TODO: fix the hardcoded variables here
+    file_path = "data/raw/UBAR/multi-woz/data.json"
+    user_model.print_intermediary_info = True
+    n_goals = 100
 
-        for turn_id in range(100):
-            user_model.response(sys_utt)
+    for dialogue_number, goal in enumerate(read_multiWOZ_20_goals(file_path, n_goals)):
+        try:
+            # goal = generate_example_goal()
+            user_model.init_session(ini_goal=goal)
+            sys_utt = ""
 
-            if user_model.is_terminated():
-                print("Dialogue terminates!")
-                break
+            for turn_id in range(100):
+                user_model.response(sys_utt)
 
-            # next turn materials
-            sys_utt = input("Enter system response here: ")
+                if user_model.is_terminated():
+                    print("Dialogue terminates!")
+                    break
+
+                # next turn materials
+                sys_utt = input("Enter system response here: ")
+                if sys_utt == "Goodbye":
+                    break
+
+        except Exception:
+            print("Error in dialogue {}".format(dialogue_number))
+            traceback.print_exc()
+            continue
 
 
 if __name__ == "__main__":

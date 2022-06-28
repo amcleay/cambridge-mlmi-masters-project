@@ -8,6 +8,7 @@ from copy import deepcopy
 
 import numpy as np
 import spacy
+from transformers import GPT2Tokenizer
 
 from crazyneuraluser.UBAR_code import ontology, utils
 from crazyneuraluser.UBAR_code.config import global_config as cfg
@@ -868,10 +869,10 @@ class MultiWozReader(_ReaderBase):
             if cfg.use_all_previous_context:
                 inputs["labels"] = pv_context + context  # use all previous ubar history
             else:
-                inputs["labels"] = context  # use privosu trun
+                inputs["labels"] = context  # use previous trun
 
         if len(inputs["context"]) > 900:
-            # print('len exceeds 900')
+            print("len exceeds 900")
             inputs["context"] = inputs["context"][-900:]
 
         return inputs
@@ -1359,7 +1360,7 @@ class MultiWozReader(_ReaderBase):
 
 
 if __name__ == "__main__":
-    reader = MultiWozReader()
+    reader = MultiWozReader(GPT2Tokenizer)
     # for aspan in ["[general] [bye] [welcome] <eos_a>","[train] [inform] trainid destination \
     #  arrive leave [offerbook] [general] [reqmore] <eos_a>",]:
     #     act = reader.aspan_to_constraint_dict(aspan.split())
@@ -1368,9 +1369,9 @@ if __name__ == "__main__":
 
     for bspan in [
         "[taxi] destination golden house departure broughton house gallery arrive 19:30 [attraction]"
-        + "type museum name whipple museum of the history of science people 5 day monday",
+        + " type museum name whipple museum of the history of science people 5 day monday",
         "[taxi] destination golden house departure broughton house gallery arrive 19:30 [attraction]"
-        + "type museum name whipple museum of the history of science people 5 day monday <eos_b>",
+        + " type museum name whipple museum of the history of science people 5 day monday <eos_b>",
     ]:
         encoded = reader.vocab.sentence_encode(bspan.split())
         print(encoded)
