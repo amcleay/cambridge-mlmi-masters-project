@@ -1,6 +1,7 @@
 import json
 import random
 import sqlite3
+import string
 
 from crazyneuraluser.UBAR_code.ontology import all_domains, db_domains
 
@@ -123,9 +124,9 @@ class MultiWozDB(object):
         if domain == "taxi":
             return [
                 {
-                    "taxi_colors": random.choice(self.dbs[domain]["taxi_colors"]),
-                    "taxi_types": random.choice(self.dbs[domain]["taxi_types"]),
-                    "taxi_phone": [random.randint(1, 9) for _ in range(10)],
+                    "taxi_colors": random.choice(self.dbs[domain][0]["taxi_colors"]),
+                    "taxi_types": random.choice(self.dbs[domain][0]["taxi_types"]),
+                    "taxi_phone": "".join(random.choices(string.digits, k=10)),
                 }
             ]
         if domain == "police":
@@ -136,7 +137,9 @@ class MultiWozDB(object):
                     if entry.get("department") == constraints.get("department"):
                         return [entry]
             else:
-                return []
+                # Instead of returning an empty list which breaks lexicalisation, when is no department constraint,
+                # return the first entry from the hospital db so the user still gets hospital information.
+                return [self.dbs["hospital"][0]]
 
         valid_cons = False
         for v in constraints.values():

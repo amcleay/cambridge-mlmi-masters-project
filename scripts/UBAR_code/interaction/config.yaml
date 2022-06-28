@@ -1,5 +1,5 @@
 model:
-  path: "./models/user_model/MultiWOZ-full_checkpoint_step340k"
+  path: "./models/UBAR/experiments/distilgpt-2_sd11_lr0.0001_bs16_ga2/epoch50_trloss0.59_gpt2"
   goal_update:
     finish_inform: "loose" # loose or strict
 
@@ -10,3 +10,14 @@ decode:
   num_beams: 1
   temperature: 1.0
   do_sample: False
+
+use_all_previous_context: False
+
+dbs_path:
+  "attraction": "data/preprocessed/UBAR/db_processed/attraction_db_processed.json"
+  "hospital": "data/preprocessed/UBAR/db_processed/hospital_db_processed.json"
+  "hotel": "data/preprocessed/UBAR/db_processed/hotel_db_processed.json"
+  "police": "data/preprocessed/UBAR/db_processed/police_db_processed.json"
+  "restaurant": "data/preprocessed/UBAR/db_processed/restaurant_db_processed.json"
+  "taxi": "data/preprocessed/UBAR/db_processed/taxi_db_processed.json"
+  "train": "data/preprocessed/UBAR/db_processed/train_db_processed.json"

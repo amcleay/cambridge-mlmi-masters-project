@@ -107,6 +107,7 @@ class Vocab(object):
         _freq_dict = OrderedDict(
             sorted(self._freq_dict.items(), key=lambda kv: kv[1], reverse=True)
         )
+
         write_dict(vocab_path + ".word2idx.json", self._word2idx)
         write_dict(vocab_path + ".freq.json", _freq_dict)
 

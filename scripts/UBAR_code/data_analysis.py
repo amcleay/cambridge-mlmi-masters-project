@@ -2,15 +2,14 @@ import copy
 import json
 import os
 import re
-import zipfile
 from collections import OrderedDict
 
 from crazyneuraluser.UBAR_code.ontology import all_domains
 
 # 2.0
-data_path = "data/raw/UBAR/multi-woz/"
-save_path = "data/interim/multi-woz-analysis/"
-save_path_exp = "data/preprocessed/UBAR/multi-woz-processed/"
+data_path = "data/preprocessed/UBAR/gen_usr_utt_experiment_data.json"
+save_path = "data/interim/gen_usr_utts/multi-woz-analysis/"
+save_path_exp = "data/preprocessed_gen_usr_utts/UBAR/multi-woz-processed/"
 # 2.1
 # data_path = 'data/raw/UBAR/MultiWOZ_2.1/'
 # save_path = 'data/interim/multi-woz-2.1-analysis/'
@@ -32,8 +31,9 @@ def analysis():
         req_slots[domain] = []
         info_slots[domain] = []
 
-    archive = zipfile.ZipFile(data_path + data_file + ".zip", "r")
-    data = archive.open(data_file, "r").read().decode("utf-8").lower()
+    # archive = zipfile.ZipFile(data_path + data_file + ".zip", "r")
+    # data = archive.open(data_file, "r").read().decode("utf-8").lower()
+    data = open(data_path, "r").read().lower()
     ref_nos = list(set(re.findall(r"\"reference\"\: \"(\w+)\"", data)))
     data = json.loads(data)
 
