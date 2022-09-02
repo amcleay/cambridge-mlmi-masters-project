@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 import torch
+import wandb
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from tqdm import tqdm
 from transformers import (
@@ -15,7 +16,6 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 
-import wandb
 from crazyneuraluser.user_model_code.argument import get_args
 
 # from interact import interact

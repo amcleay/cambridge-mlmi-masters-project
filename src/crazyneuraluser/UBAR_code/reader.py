@@ -575,12 +575,14 @@ class MultiWozReader(_ReaderBase):
                     if ".json" in fn:
                         fn = fn.replace(".json", "")
                     if "all" in cfg.exp_domains or self.exp_files.get(fn):
-                        if self.dev_files.get(fn):
-                            self.dev.append(self._get_encoded_data(fn, dial))
-                        elif self.test_files.get(fn):
-                            self.test.append(self._get_encoded_data(fn, dial))
-                        else:
-                            self.train.append(self._get_encoded_data(fn, dial))
+                        # NOTE: I have commented out the below because I'm doing an experiment where I
+                        # only want encode new training data
+                        # if self.dev_files.get(fn):
+                        # self.dev.append(self._get_encoded_data(fn, dial))
+                        # elif self.test_files.get(fn):
+                        # self.test.append(self._get_encoded_data(fn, dial))
+                        # else:
+                        self.train.append(self._get_encoded_data(fn, dial))
 
                 # save encoded data
                 encoded_data = {"train": self.train, "dev": self.dev, "test": self.test}
@@ -597,12 +599,14 @@ class MultiWozReader(_ReaderBase):
                 if ".json" in fn:
                     fn = fn.replace(".json", "")
                 if "all" in cfg.exp_domains or self.exp_files.get(fn):
-                    if self.dev_files.get(fn):
-                        self.dev.append(self._get_encoded_data(fn, dial))
-                    elif self.test_files.get(fn):
-                        self.test.append(self._get_encoded_data(fn, dial))
-                    else:
-                        self.train.append(self._get_encoded_data(fn, dial))
+                    # NOTE: I have commented out the below because I'm doing an experiment where I
+                    # only want encode new training data
+                    # if self.dev_files.get(fn):
+                    #    self.dev.append(self._get_encoded_data(fn, dial))
+                    # elif self.test_files.get(fn):
+                    #    self.test.append(self._get_encoded_data(fn, dial))
+                    # else:
+                    self.train.append(self._get_encoded_data(fn, dial))
         # if save_temp:
         #     json.dump(self.test, open(
         #         'data/multi-woz-analysis/test.encoded.json', 'w'), indent=2)
@@ -671,7 +675,8 @@ class MultiWozReader(_ReaderBase):
                 self.tokenizer.tokenize("<sos_d> " + t["turn_domain"] + " <eos_d>")
             )
 
-            enc["pointer"] = [int(i) for i in t["pointer"].split(",")]
+            # NOTE: I'm commenting out pointer because we don't need it for training
+            # enc["pointer"] = [int(i) for i in t["pointer"].split(",")]
             enc["turn_domain"] = t["turn_domain"].split()
             enc["turn_num"] = t["turn_num"]
             if cfg.multi_acts_training:
@@ -877,7 +882,7 @@ class MultiWozReader(_ReaderBase):
 
         return inputs
 
-    def convert_batch_session(self, dial_batch):
+    def convert_batch_session(self, dial_batch, usr_sim_format=False):
         """
         convert the whole session for training
         concat [U_0, B_0, A_0, R_0, ... , U_n, B_n, A_n, R_n]
@@ -886,6 +891,33 @@ class MultiWozReader(_ReaderBase):
         or
         try: [user, bspn, db, aspn, resp]
         """
+
+        if usr_sim_format:
+            inputs = {}
+            contexts = []
+            dial_history_cell_list = ["user", "resp"]
+            turn_specific_cell_list = ["bspn", "db", "aspn"]
+            for idx, dial in enumerate(dial_batch):
+                context = []
+
+                # Create the linearised dialogue history (user, resp, user, resp, ...)
+                for turn_num, turn in enumerate(dial):
+                    for dial_history_cell in dial_history_cell_list:
+                        context.extend(turn[dial_history_cell])
+
+                # Add the bspn, db, aspn from the *current turn only* to the context
+                for turn_num, turn in enumerate(dial):
+                    for turn_specific_cell in turn_specific_cell_list:
+                        context.extend(turn[turn_specific_cell])
+
+                contexts.append(context)
+
+            inputs["contexts"] = contexts
+            inputs["contexts_np"], inputs["lengths"] = utils.padSeqs_gpt(
+                inputs["contexts"], cfg.pad_id
+            )
+            return inputs
+
         inputs = {}
         contexts = []
         cell_list = ["user", "bspn", "db", "aspn", "resp"]

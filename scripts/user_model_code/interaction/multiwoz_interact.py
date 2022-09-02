@@ -92,7 +92,6 @@ class NeuralAgent:  # crazyusermodel
         # load necessities
         self.set_device()
         self.config = OmegaConf.load(model_config_path)
-
         self.print_intermediary_info = False
 
         # get schema, which is dependent to dataset, only for providing task description here
@@ -108,6 +107,7 @@ class NeuralAgent:  # crazyusermodel
         self.behaviour_params = {}
         self.input_action = []  # type: list[list[str]]
         self.output_action = []  # type: list[list[str]]
+        self.usr_curr_turn_act_dict = {}
 
         # for compatibility with convlab2 evaluator
         self.policy = DummyPolicy()
@@ -813,6 +813,8 @@ class NeuralAgent:  # crazyusermodel
         self._context_str = ""  # context string with special tags used in generation
         self._prev_usr_act = ""  # user act string used in generation
 
+        self.usr_curr_turn_act_dict = {}
+
         # goal process
         self.complete_goal = self._format_complete_goal(self.current_goal)
         self.user_status = self._init_user_status()
@@ -852,6 +854,9 @@ class NeuralAgent:  # crazyusermodel
         if self.print_intermediary_info:
             segment_gen(gen_str, "example dialogue")  # crazyusermodel
         # TODO: update lists of context, da_in, da_out here
+
+        self.usr_curr_turn_act_dict = self.parse_act(self._prev_usr_act, False)
+
         return gen_parse["USR_UTT"]
 
     def get_in_da(self) -> List[List[str]]:
@@ -1009,29 +1014,38 @@ def set_sorted_services_for_current_goal(goal, goal_idx, df_raw_mwoz):
     return ordered_current_dialogue_services
 
 
-def read_multiWOZ_20_goals(file_path, n_goals):
+def read_multiWOZ_20_goals(file_path, n_goals, generated_goals=False):
     df_raw_mwoz = pd.read_json(file_path)
 
     goals = []
     for i in range(n_goals):
         parsed_goal = {}
-        goal = df_raw_mwoz.iloc[:, i].goal
+        if generated_goals:
+            goal = df_raw_mwoz.iloc[:, i]
+            goal = goal[pd.notnull(goal)]
+
+        else:
+            goal = df_raw_mwoz.iloc[:, i].goal
 
         # Determine relevant keys
         for _ in goal.keys():
             relevant_goals = {
                 k: v
                 for k, v in goal.items()
-                if v != {} and k != "topic" and k != "message"
+                if v != {} and v and k != "topic" and k != "message"
             }
             services = [key for key in relevant_goals.keys()]
             for service in services:
                 parsed_goal[service] = relevant_goals[service]
 
-        ordered_services = set_sorted_services_for_current_goal(
-            parsed_goal, i, df_raw_mwoz
-        )
-        parsed_goal["ordered_services"] = ordered_services
+        if generated_goals:
+            services = list(parsed_goal.keys())
+            parsed_goal["ordered_services"] = services
+        else:
+            ordered_services = set_sorted_services_for_current_goal(
+                parsed_goal, i, df_raw_mwoz
+            )
+            parsed_goal["ordered_services"] = ordered_services
 
         # Update the format of those relevant keys to match the format of this code
         for service in parsed_goal.keys():
