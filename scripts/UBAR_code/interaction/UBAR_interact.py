@@ -11,6 +11,7 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 from crazyneuraluser.UBAR_code.config import global_config as cfg
 from crazyneuraluser.UBAR_code.db_ops import MultiWozDB
+from crazyneuraluser.UBAR_code.eval import MultiWozEvaluator
 from crazyneuraluser.UBAR_code.reader import MultiWozReader
 
 
@@ -30,8 +31,8 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
     def __init__(self, name: str, checkpoint_path: str, model_config_path: str):
 
         self.tokenizer = GPT2Tokenizer.from_pretrained(checkpoint_path)
-        self.model = GPT2LMHeadModel.from_pretrained(checkpoint_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = GPT2LMHeadModel.from_pretrained(checkpoint_path).to(self.device)
         self.name = name
         self.turn_domain = [
             "general"
@@ -40,6 +41,8 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
 
         self.ubar_status = {"dialogue_terminate": False}
 
+        self.context = ""
+
         self.print_intermediary_info = False
 
         self.config = OmegaConf.load(model_config_path)
@@ -47,8 +50,9 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
 
         #  NB: best to use corpus goals to guide interactions - baselines/simulate_agent.py allows that.
 
-        # initialize multiwoz reader and db_ops
+        # initialize multiwoz reader and evaluator and dbops
         self.reader = MultiWozReader(self.tokenizer)
+        self.evaluator = MultiWozEvaluator(self.reader)
         self.db = MultiWozDB(self.config.dbs_path)
 
     def lexicalize_sys_response(
@@ -65,12 +69,15 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
             if token.startswith("["):  # It is a slot to be filled
 
                 # Note in hotel there is specific price data too but to simplify things
-                # we just use the price range (e.g. moderate)
-                # TODO: there are different uses of price in different databases ('price' vs 'pricerange':
-                # need to deal with this appropriately below)
+                # we just return all price options
+                db_price_key = "price"
+                # if domain is restaurant then use "pricerange"
+                if self.turn_domain[0] == "restaurant":
+                    db_price_key = "pricerange"
+
                 slots_to_db_keys_map = {
-                    "[value_price]": "price",
-                    "[value_pricerange]": "pricerange",
+                    "[value_price]": db_price_key,
+                    "[value_pricerange]": db_price_key,
                     "[value_food]": "food",
                     "[value_area]": "area",
                     "[value_type]": "type",
@@ -138,11 +145,26 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
                             "police"
                         ]:
                             token = "CB11QD"
+                            continue
                         decoded_belief_states = decoded_belief_state_subseq.split()
                         for idx, belief_state_slot in enumerate(decoded_belief_states):
                             if token in slots_to_db_keys_map.keys():
                                 if slots_to_db_keys_map[token] == belief_state_slot:
-                                    token == decoded_belief_states[idx + 1]
+                                    curr_slot_resp = ""
+                                    # We dont know the length of the value we need to extract
+                                    for belief_state_token in decoded_belief_states[
+                                        idx + 1 :
+                                    ]:
+                                        if (
+                                            belief_state_token
+                                            not in slots_to_db_keys_map.values()
+                                            and belief_state_token != "<eos_b>"
+                                        ):
+                                            curr_slot_resp += belief_state_token + " "
+                                        else:
+                                            break
+                                    token = curr_slot_resp[:-1]
+                                    continue
 
                     # Otherwise just leave the slot as it is as we have failed to fill it
 
@@ -212,18 +234,21 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
                         print("Current Belief State: " + decoded_belief_state_subseq)
 
         else:
-            decoded_sys_act_subseq = self.tokenizer.decode(
-                sys_act_span_ids_subseq[1:-1]
-            )
+            try:
+                decoded_sys_act_subseq = self.tokenizer.decode(
+                    sys_act_span_ids_subseq[1:-1]
+                )
 
-            most_recent_domain_in_sys_act = [
-                [
-                    token.strip("[]")
-                    for token in decoded_sys_act_subseq.split()
-                    if token.startswith("[")
-                ][0]
-            ]
-            self.turn_domain = most_recent_domain_in_sys_act
+                most_recent_domain_in_sys_act = [
+                    [
+                        token.strip("[]")
+                        for token in decoded_sys_act_subseq.split()
+                        if token.startswith("[")
+                    ][0]
+                ]
+                self.turn_domain = most_recent_domain_in_sys_act
+            except Exception:
+                return
 
     def get_domain_hits(self, decoded_belief_state_subseq) -> dict:
         # Get hits from db based on belief state, unless its a general turn (no hits then)
@@ -353,7 +378,6 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
 
         context_input_subeq_tensor = inputs["context_tensor"]
 
-        # TODO: FIND OUT BY COMPARING WITH MODEL.VALIDATE() how to calculate context_length
         context_length = len(context_input_subseq)
 
         belief_state_ids = self.model.generate(
@@ -438,7 +462,7 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
 
         return generated_subseq_ids_map
 
-    def response(self, usr_utterance: str, turn_id: int) -> str:
+    def response(self, usr_utterance: str, turn_id: int, lexicalise=True) -> str:
 
         if usr_utterance == "Goodbye":
             self._activate_dialogue_terminate()
@@ -481,9 +505,10 @@ class UbarSystemModel:  # may inherit convlab or not, just like andy's
             domain_hits = self.get_domain_hits(decoded_belief_state_subseq)
             # print(bcolors.UNDERLINE + "Domain hits: \n" + bcolors.ENDC, domain_hits)  # for debugging
 
-            sys_response = self.lexicalize_sys_response(
-                sys_response, domain_hits, decoded_belief_state_subseq
-            )
+            if lexicalise:
+                sys_response = self.lexicalize_sys_response(
+                    sys_response, domain_hits, decoded_belief_state_subseq
+                )
 
         return sys_response
 
@@ -495,7 +520,7 @@ def interact(checkpoint_path):
     # TODO: Fix this hardcoded variable (should be in  config)
     sys_model.print_intermediary_info = True
 
-    for dial_id in range(1, 11):
+    for dial_id in range(100):
         print(f"In dialogue {dial_id}")
 
         # Reset state after each dialog

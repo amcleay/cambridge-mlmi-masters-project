@@ -9,25 +9,25 @@ import warnings
 import numpy as np
 import torch
 import torch.nn as nn
+import wandb
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 
-import wandb
 from crazyneuraluser.UBAR_code.config import global_config as cfg
 from crazyneuraluser.UBAR_code.eval import MultiWozEvaluator
 from crazyneuraluser.UBAR_code.reader import MultiWozReader
 
 # from config21 import global_config as cfg  # global, already initialized
 
-
 warnings.filterwarnings("ignore")
 
 
 class Model(object):
     def __init__(self, device):
-        self.device = device
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # initialize tokenizer
         self.tokenizer = GPT2Tokenizer.from_pretrained(cfg.gpt_path)
         # cfg.tokenizer = tokenizer
@@ -134,7 +134,8 @@ class Model(object):
         loss /= num_targets
         return loss
 
-    def train(self):
+    # MY EDITED TRAIN
+    def edited_train(self):
         """
         UBARU
         """
@@ -158,6 +159,7 @@ class Model(object):
         )
 
         all_batches = self.reader.get_batches("train")
+        # all_val_batches = self.reader.get_batches("dev")
         # compute num_training_steps in get_batches()
         optimizer, scheduler = self.get_optimizers()
 
@@ -190,6 +192,185 @@ class Model(object):
         log_inputs = 2
         global_step = 0
         # sw = time.time()
+
+        for epoch in range(cfg.epoch_num):
+            epoch_step = 0
+            tr_loss = 0.0
+            logging_loss = 0.0
+            btm = time.time()
+            oom_time = 0
+            self.model.zero_grad()
+
+            data_iterator = self.reader.get_nontranspose_data_iterator(all_batches)
+
+            for batch_idx, dial_batch in enumerate(data_iterator):
+                inputs = self.reader.convert_batch_session(
+                    dial_batch, usr_sim_format=True
+                )
+                try:  # avoid OOM
+                    self.model.train()
+                    if log_inputs > 0:  # log inputs for the very first two turns
+                        self.log_first_inputs(inputs)
+                        log_inputs -= 1
+
+                    # to tensor
+                    inputs = self.add_torch_input(inputs)
+                    # loss
+                    outputs = self.model(inputs["contexts_tensor"])
+                    # outputs = self.model(inputs['contexts_tensor']) # debugging with GPT2Model
+                    loss = self.calculate_loss_and_accuracy(
+                        outputs, labels=inputs["contexts_tensor"]
+                    )
+
+                    loss.backward()
+                    tr_loss += loss.item()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), 5.0)
+                    epoch_step += 1
+
+                    # step, wrt gradient_accumulation_steps, clip grad norm
+                    if (epoch_step + 1) % cfg.gradient_accumulation_steps == 0 or (
+                        # end of an epoch
+                        (epoch_step + 1)
+                        == set_stats["num_training_steps_per_epoch"]
+                    ):
+                        optimizer.step()
+                        scheduler.step()
+                        optimizer.zero_grad()
+                        # global_step: actual step the optimizer took
+                        global_step += 1
+
+                        logs = {}  # for tb writer
+                        # logging: loss, lr... after certain amount of steps
+                        if (
+                            cfg.report_interval > 0
+                            and global_step % cfg.report_interval == 0
+                        ):
+                            loss_scalar = (tr_loss - logging_loss) / cfg.report_interval
+                            logging_loss = tr_loss
+                            logs["loss"] = loss_scalar
+                            logging.info(
+                                "Global step: {}, epoch step: {}, interval loss: {:.4f}".format(
+                                    global_step, epoch_step, loss_scalar
+                                )
+                            )
+
+                            # validate
+                            # add to tensorboard...
+                            if cfg.evaluate_during_training and loss_scalar < 10:
+                                results = self.validate(epoch)
+                                for k, v in results.items():
+                                    eval_key = "eval_{}".format(k)
+                                    logs[eval_key] = v
+
+                            if self.tb_writer:
+                                for k, v in logs.items():
+                                    self.tb_writer.add_scalar(k, v, global_step)
+
+                            # save model...
+
+                except RuntimeError as exception:
+                    if "out of memory" in str(exception):
+                        max_length = max(inputs["lengths"])
+                        oom_time += 1
+                        logging.info(
+                            "WARNING: ran out of memory,times: {}, batch size: {}, max_len: {}".format(
+                                oom_time, cfg.batch_size, max_length
+                            )
+                        )
+                        if hasattr(torch.cuda, "empty_cache"):
+                            torch.cuda.empty_cache()
+                    else:
+                        logging.info(str(exception))
+                        raise exception
+            logging.info(
+                "Train epoch time: {:.2f} min, epoch loss: {:.4f}".format(
+                    (time.time() - btm) / 60, tr_loss
+                )
+            )
+            # save model after every epoch
+            # if epoch > 10 or tr_loss/epoch_step < 1:
+            self.save_model(epoch, tr_loss / epoch_step)
+
+            """
+            # Calculate validation loss for the epoch
+            val_data_iterator = self.reader.get_nontranspose_data_iterator(all_val_batches)
+
+            val_loss = 0.0
+
+            for batch_idx, dial_batch in enumerate(val_data_iterator):
+                inputs = self.reader.convert_batch_session(dial_batch)
+                try:  # avoid OOM
+                    # self.model.train()
+                    self.model.zero_grad()
+                    # to tensor
+                    inputs = self.add_torch_input(inputs)
+                    # loss
+                    outputs = self.model(inputs["contexts_tensor"])
+                    # outputs = self.model(inputs['contexts_tensor']) # debugging with GPT2Model
+                    loss = self.calculate_loss_and_accuracy(outputs, labels=inputs["contexts_tensor"])
+
+                    val_loss += loss.item()
+
+                except RuntimeError as exception:
+                    if "out of memory" in str(exception):
+                        max_length = max(inputs["lengths"])
+                        oom_time += 1
+                        logging.info(
+                            "WARNING: ran out of memory,times: {}, batch size: {}, max_len: {}".format(
+                                oom_time, cfg.batch_size, max_length
+                            )
+                        )
+                        if hasattr(torch.cuda, "empty_cache"):
+                            torch.cuda.empty_cache()
+                    else:
+                        logging.info(str(exception))
+                        raise exception
+
+            wandb.log({"val loss": val_loss})
+            """
+
+            wandb.log({"train loss": tr_loss})
+
+        # Mark the run as finished on wandb
+        wandb.finish()
+
+    # ORIGINAL UNDEDITED TRAIN
+    def train(self):
+        """
+        UBARU
+        """
+        all_batches = self.reader.get_batches("train")
+        # compute num_training_steps in get_batches()
+        optimizer, scheduler = self.get_optimizers()
+
+        # log info
+        set_stats = self.reader.set_stats["train"]
+        logging.info("***** Running training *****")
+        logging.info(
+            "  Num Training steps(one turn in a batch of dialogs) per epoch = %d",
+            set_stats["num_training_steps_per_epoch"],
+        )
+        logging.info("  Num Turns = %d", set_stats["num_turns"])
+        logging.info("  Num Dialogs = %d", set_stats["num_dials"])
+        logging.info("  Num Epochs = %d", cfg.epoch_num)
+        logging.info("  Batch size  = %d", cfg.batch_size)
+        logging.info(
+            "  Gradient Accumulation steps = %d", cfg.gradient_accumulation_steps
+        )
+        logging.info(
+            "  Total optimization steps = %d",
+            set_stats["num_dials"]
+            * cfg.epoch_num
+            // (cfg.gradient_accumulation_steps * cfg.batch_size),
+        )
+
+        # tb writer
+        if self.tb_writer is not None:
+            self.tb_writer.add_text("cfg", json.dumps(cfg.__dict__, indent=2))
+            # self.tb_writer.add_hparams(self.args.to_sanitized_dict(), metric_dict={})
+
+        log_inputs = 2
+        global_step = 0
 
         for epoch in range(cfg.epoch_num):
             epoch_step = 0
@@ -248,11 +429,10 @@ class Model(object):
                                     global_step, epoch_step, loss_scalar
                                 )
                             )
-
                             # validate
                             # add to tensorboard...
                             if cfg.evaluate_during_training and loss_scalar < 10:
-                                results = self.validate(epoch)
+                                results = self.validate()
                                 for k, v in results.items():
                                     eval_key = "eval_{}".format(k)
                                     logs[eval_key] = v
@@ -285,11 +465,6 @@ class Model(object):
             # if epoch > 10 or tr_loss/epoch_step < 1:
             self.save_model(epoch, tr_loss / epoch_step)
 
-            wandb.log({"epoch loss": tr_loss})
-
-        # Mark the run as finished on wandb
-        wandb.finish()
-
     def save_model(self, epoch, loss):
         save_path = os.path.join(
             cfg.exp_path, "epoch{}_trloss{:.2f}_gpt2".format(epoch + 1, loss)
@@ -303,7 +478,11 @@ class Model(object):
         self.tokenizer.save_pretrained(save_path)
         # save cfg
 
-    def validate(self, data="dev", do_test=False, epoch=0):
+    def validate(self, data="dev", do_test=False, epoch=0, save_for_eval=True):
+
+        # TODO: Fix hardcoding
+        test_data_out_path = "5_AUGUST_DISTILGPT2_BOTH_DATA_EPOCH43.json"
+        generated_test_data = {}
 
         if cfg.mode != "train":
             wandb.init(
@@ -368,11 +547,19 @@ class Model(object):
         result_collection = {}
         with torch.no_grad():
             # Adding this index to allow for quick testing of evaluation
-            dialogues_to_run = 1
+            # dialogues_to_run = 10
             for dial_idx, dialog in tqdm(enumerate(eval_data)):
-                if dialogues_to_run == 0:
-                    break
-                dialogues_to_run -= 1
+                # if dialogues_to_run == 0:
+                #    break
+                # dialogues_to_run -= 1
+
+                # Save data every 50 in case of crash
+                if save_for_eval:
+                    if dial_idx % 50 == 0:
+                        with open(test_data_out_path, "w") as f:
+                            json.dump(generated_test_data, f, indent=4)
+
+                dialogue_test_data = []
 
                 pv_turn = {}
                 for turn_idx, turn in enumerate(dialog):
@@ -491,6 +678,19 @@ class Model(object):
                         turn["aspn"] if cfg.use_true_prev_aspn else decoded["aspn"]
                     )
 
+                    curr_turn_data = {}
+                    curr_turn_data["response"] = self.tokenizer.decode(
+                        turn["resp_gen"][1:-1]
+                    )
+                    curr_turn_data["state"] = self.reader.bspan_to_constraint_dict(
+                        self.tokenizer.decode(turn["bspn"][1:-1])
+                    )
+                    curr_turn_data["active_domains"] = [turn["turn_domain"][0][1:-1]]
+
+                    dialogue_test_data.append(curr_turn_data)
+
+                generated_test_data[dialog[0]["dial_id"]] = dialogue_test_data
+
                 turn_result = self.reader.inverse_transpose_turn(dialog)
                 result_collection.update(turn_result)
 
@@ -573,6 +773,10 @@ class Model(object):
         # log predictions table to wandb, giving it a name
         test_data_at.add(val_table, "predictions")
         wandb.run.log_artifact(test_data_at)
+
+        if save_for_eval:
+            with open(test_data_out_path, "w") as f:
+                json.dump(generated_test_data, f, indent=4)
 
         if cfg.mode != "train":
             # Mark the run as finished on wandb
@@ -680,15 +884,7 @@ def main():
                 else "./models/experiments_Xdomain"
             )
             cfg.exp_path = os.path.join(
-                experiments_path,
-                "{}_{}_sd{}_lr{}_bs{}_ga{}".format(
-                    "-".join(cfg.exp_domains),
-                    cfg.exp_no,
-                    cfg.seed,
-                    cfg.lr,
-                    cfg.batch_size,
-                    cfg.gradient_accumulation_steps,
-                ),
+                experiments_path, "4_AUGUST_DISTILGPT2_recreating_core_model"
             )
             logging.info("save path:", cfg.exp_path)
             if cfg.save_log:

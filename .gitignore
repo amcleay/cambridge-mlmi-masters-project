@@ -57,3 +57,5 @@ MANIFEST
 /wandb
 /logs_test
 /models
+
+/scripts/ppo_train_ubar.py
