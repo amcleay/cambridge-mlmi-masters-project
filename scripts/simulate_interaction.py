@@ -1,3 +1,7 @@
+"""
+Simulate interaction between the two agents, UBAR-E (the dialogue system) and LSP-US (the user simulator)
+"""
+
 import json
 import traceback
 
