@@ -1,5 +1,14 @@
-# Cambridge Masters Project
+# Cambridge Masters in Machine Learning Project
+
 Joint Learning of Practical Dialogue Systems and User Simulators
+
+## Dissertation
+
+The dissertation for this project can be read [here](https://static1.squarespace.com/static/60bf1b5023f4f279ec0cf558/t/62fe43cdb9986b33de522282/1660830683789/Alistair+McLeay+Cambridge+Masters+Thesis.pdf).
+
+## Demo
+
+To interact with the dialogue system and user simulator, go to https://huggingface.co/spaces/alistairmcleay/cambridge-masters-project.
 
 ## Environment setup
 
@@ -22,38 +31,6 @@ Joint Learning of Practical Dialogue Systems and User Simulators
    python -m spacy download en_core_web_sm
    ```
 
-### Generating dialogues through agent-agent interaction
-
-To generate dialogues, first change working directory to the `baselines` directory. Run the command
-   ```
-   python baselines_setup.py
-   ```
-to prepare `convlab2` for running the baselines. 
-
-#### Generating dialogues conditioned on randomly sampled goals
-
-Select one of the available configurations in the `configs` directory and run the command
-   ```
-   python simulate_agent_interaction.py --config /rel/path/to/chosen/config
-   ```
-to generate dialogues conditioned on randomly sampled goals according to the `convlab2` goal model. The dialogues will be be saved automatically in the `models` directory, under a directory whose name depends on the configuration run. The `models` directory is located in the parent directory of the `baselines` directory. The `metadata.json` file saved with the dialogues contains information about the data generation process.
-
-#### Generating dialogues conditioned on `MultiWOZ2.1` goals
-
-To generate the entire corpus, simply pass the `--goals-path /path/to/multiwoz2.1/data.json/file` flag to `simulate_agent_interaction.py`. To generate the `test/val` split additionally pass the `--filter-path /path/to/multiwoz2.1/test-or-valListFile` argument to `simulate_agent_interaction.py`. You can use the  `generate_multiwoz21_train_id_file` function in `baselines/utils.py` to generate `trainListFile` which can then be passed via the `--filter-path` argument to the dialogue generation script in order to generate dialogues conditioned on the `MultiWOZ2.1` training goals.
-
-### Converting the generated dialogues to SGD-like format
-
-The `create_data_from_multiwoz.py` script can be used to convert the generated dialogues to SGD format, necessary for evaluation. It is based on the script provided by Google for DSTC8, but with additional functionality such as:
-
-   - conversion of slot names as annotated in the MultiWOZ 2.1 dialogue acts to different slot names, specified through the `--slots_convention` argument. Options are `multiwoz22` to convert the slots to the same slots as defined in the MultiWOZ 2.2 dataset whreas the `multiwoz_goals` converts the slot names to the names used in the dialogue goal and state tracking annotations.
-
-  - addition of system and user `nlu` fields for every turn
-
-  - option to perform cleaning operations on the goals to ensure a standard format is received by the evaluator. 
-
-The conversion is done according to the `schema.json` file in the `baselines` directory, which is the same as used by `DSTC8` conversion except for the addition of the `police` domain. Type ``python create_data_from_multiwoz.py --helpfull`` to see a full list of flags and usage. 
-
 ## Installation
 
 The recommended way to use this repository is to develop the core code under `src/crazyneuraluser`. The experiments/exporatory analysis making use of the core package code should be placed outside the library and imported. See more guidance under the [Project Organisation](#project-organization) section below.
@@ -68,7 +45,7 @@ To create an environment for the package, make sure you have deactivated all `co
    ```
    conda env update -f dev_environment.yml
    ```
-   
+
 Optional and needed only once after `git clone`:
 
 3. install several [pre-commit] git hooks with:

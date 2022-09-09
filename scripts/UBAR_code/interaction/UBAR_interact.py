@@ -1,3 +1,7 @@
+"""
+Run UBAR/UBAR-E in interaction mode, via the terminal
+"""
+
 import random
 import string
 import sys

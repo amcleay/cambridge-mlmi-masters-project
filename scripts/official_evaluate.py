@@ -1,3 +1,7 @@
+"""
+Quick script to use the official MultiWOZ evaluation scripts
+"""
+
 from mwzeval.metrics import Evaluator
 
 e = Evaluator(bleu=False, success=False, richness=True)
@@ -9,15 +13,18 @@ e = Evaluator(bleu=False, success=False, richness=True)
 # usr_utterances_path = "data/preprocessed/UBAR/TEST_user_utterances_from_simulator.txt"
 # with open(usr_utterances_path, "r") as f:
 # data = f.readlines()
+
 # BELOW LINE FOR TEST_user_utterances_from_user_simulator
 # my_predictions = [usr_utterance.split("\t")[3] for usr_utterance in data][1:]
+
 # BELOW LINE FOR LABELLED_user_utterances which is the user utterances from the labelled test data
 # my_predictions = [usr_utterance.split("\t")[0].strip() for usr_utterance in data]
 
-# BELOW FOR SETS OF 1000 GENERATED USER UTTERANCES FROM RANDOMLY SAMPLED GOALS
+# BELOW LINE FOR SETS OF 1000 GENERATED USER UTTERANCES FROM RANDOMLY SAMPLED GOALS
 usr_utterances_path = (
     "data/preprocessed/UBAR/duplicated_user_utterances_from_simulator.txt"
 )
+
 with open(usr_utterances_path, "r") as f:
     data = f.readlines()
     dialogue_ids = [usr_utterance.split("\t")[0] for usr_utterance in data][1:]
