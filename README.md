@@ -15,7 +15,7 @@ To interact with the dialogue system and user simulator, go to https://huggingfa
 This code was developed using [the code and model](https://github.com/TonyNemo/UBAR-MultiWOZ) published with the AAAI 2021 paper "UBAR: Towards Fully
 End-to-End Task-Oriented Dialog System with GPT-2", and the [gpt2-user-model](https://github.com/andy194673/gpt2-user-model) codebase developed by Andy Tseng while he was a PhD student at Cambridge University. These two codebases were critical to this research, and we are very grateful that they chose to open source their work.
  
-I would also like to acknowledge the [TRL library](https://lvwerra.github.io/trl/) which was highly valuable, and Huggingface for their Transformers implementation.
+We would also like to acknowledge the [TRL library](https://lvwerra.github.io/trl/) which was highly valuable, and Huggingface for their Transformers implementation.
 
 Finally, thank you to Professor [Bill Byrne](https://sites.google.com/view/bill-byrne/), [Alex Coca](https://github.com/alexcoca), and [Andy Tseng](https://github.com/andy194673) for their support throughout this project.
 
