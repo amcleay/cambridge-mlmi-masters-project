@@ -17,7 +17,7 @@ End-to-End Task-Oriented Dialog System with GPT-2", and the [gpt2-user-model](ht
  
 We would also like to acknowledge the [TRL library](https://lvwerra.github.io/trl/) which was highly valuable, and Huggingface for their Transformers implementation.
 
-Finally, thank you to Professor [Bill Byrne](https://sites.google.com/view/bill-byrne/), [Alex Coca](https://github.com/alexcoca), and [Andy Tseng](https://github.com/andy194673) for their support throughout this project.
+Finally, thank you to [Professor Bill Byrne](https://sites.google.com/view/bill-byrne/), [Alex Coca](https://github.com/alexcoca), and [Andy Tseng](https://github.com/andy194673) for their support throughout this project.
 
 ## Environment setup
 
